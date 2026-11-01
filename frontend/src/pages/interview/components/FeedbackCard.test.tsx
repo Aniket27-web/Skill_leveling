@@ -107,3 +107,4 @@ describe('FeedbackCard component', () => {
     expect(onContinueMock).toHaveBeenCalledTimes(1);
   });
 });
+

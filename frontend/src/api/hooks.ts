@@ -150,3 +150,4 @@ export async function downloadReport(sessionId: string): Promise<void> {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+

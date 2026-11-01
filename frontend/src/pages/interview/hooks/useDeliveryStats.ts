@@ -106,3 +106,4 @@ export function useDeliveryStats(text: string, isActive: boolean = true): Delive
     };
   }, [text, elapsedSeconds]);
 }
+

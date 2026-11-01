@@ -160,3 +160,4 @@ describe('Draft preservation in InterviewPage', () => {
     expect(screen.getByText(/Network failure: Connection refused/)).toBeInTheDocument();
   });
 });
+
