@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 from sqlalchemy.orm import Session
 from app.ai import (
@@ -107,17 +107,31 @@ def create_session(
 
 @router.get("", response_model=SessionListResponse)
 def list_sessions(
-    limit: int = Query(10, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+    limit: Optional[Union[int, str]] = Query(10),
+    offset: Optional[Union[int, str]] = Query(0),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SessionListResponse:
+    parsed_limit = 10
+    if limit is not None and str(limit).strip():
+        try:
+            parsed_limit = max(1, min(100, int(limit)))
+        except (ValueError, TypeError):
+            parsed_limit = 10
+
+    parsed_offset = 0
+    if offset is not None and str(offset).strip():
+        try:
+            parsed_offset = max(0, int(offset))
+        except (ValueError, TypeError):
+            parsed_offset = 0
+
     query = db.query(SessionModel).filter(SessionModel.user_id == current_user.id)
     total = query.count()
     items = (
         query.order_by(SessionModel.created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        .offset(parsed_offset)
+        .limit(parsed_limit)
         .all()
     )
     return SessionListResponse(
@@ -144,34 +158,37 @@ def get_session(
     current_q_obj: Optional[CurrentQuestionResponse] = None
     answered_count = 0
 
-    # Find the current question (first question without an answer)
-    for q in questions:
-        if q.answer_text is not None:
-            answered_count += 1
-        elif current_q_obj is None:
-            # Set shown_at server-side the first time it becomes current
-            if q.shown_at is None:
-                q.shown_at = now
-                db.add(q)
-                db.commit()
-                db.refresh(q)
+    if session.status != "completed":
+        # Find the current question (first question without an answer)
+        for q in questions:
+            if q.answer_text is not None:
+                answered_count += 1
+            elif current_q_obj is None:
+                # Set shown_at server-side the first time it becomes current
+                if q.shown_at is None:
+                    q.shown_at = now
+                    db.add(q)
+                    db.commit()
+                    db.refresh(q)
 
-            # Compute seconds_remaining from shown_at
-            sec_rem = None
-            if session.timer_seconds is not None and q.shown_at is not None:
-                shown = q.shown_at
-                if shown.tzinfo is None:
-                    shown = shown.replace(tzinfo=timezone.utc)
-                elapsed = (now - shown).total_seconds()
-                sec_rem = max(0, int(session.timer_seconds - elapsed))
+                # Compute seconds_remaining from shown_at
+                sec_rem = None
+                if session.timer_seconds is not None and q.shown_at is not None:
+                    shown = q.shown_at
+                    if shown.tzinfo is None:
+                        shown = shown.replace(tzinfo=timezone.utc)
+                    elapsed = (now - shown).total_seconds()
+                    sec_rem = max(0, int(session.timer_seconds - elapsed))
 
-            current_q_obj = CurrentQuestionResponse(
-                id=q.id,
-                order_index=q.order_index,
-                text=q.text,
-                category=q.category,
-                seconds_remaining=sec_rem,
-            )
+                current_q_obj = CurrentQuestionResponse(
+                    id=q.id,
+                    order_index=q.order_index,
+                    text=q.text,
+                    category=q.category,
+                    seconds_remaining=sec_rem,
+                )
+    else:
+        answered_count = sum(1 for q in questions if q.answer_text is not None)
 
     # Format question detail items ensuring arrays are never null
     q_details: List[QuestionInDetailResponse] = []
@@ -238,6 +255,13 @@ def answer_question(
             improvements=question.improvements or [],
             missed_points=question.missed_points or [],
             ideal_outline=question.ideal_outline or [],
+        )
+
+    # Cannot answer a question in an already-completed session
+    if session.status == "completed":
+        raise ConflictException(
+            "Session is already completed.",
+            code="session_completed",
         )
 
     # Check that this is the current active question

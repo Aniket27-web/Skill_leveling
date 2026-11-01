@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Mock Interview Coach"
     PORT: int = 8000
     ENVIRONMENT: str = "development"
-    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:5173"]
+    CORS_ORIGINS: Union[str, List[str]] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
     SECRET_KEY: str = "super-secret-jwt-key-for-ai-mock-interview-coach-min-32-chars"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours

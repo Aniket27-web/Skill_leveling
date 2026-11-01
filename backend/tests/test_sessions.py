@@ -320,6 +320,39 @@ def test_list_sessions_paginated(
     assert data["items"][0]["id"] == session_a.id
 
 
+def test_list_sessions_empty_query_params(
+    client: TestClient, auth_headers_a: dict, session_a: SessionModel
+):
+    # Contract: GET /api/sessions?limit=&offset= should gracefully use defaults
+    resp = client.get("/api/sessions?limit=&offset=", headers=auth_headers_a)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "items" in data
+    assert data["total"] >= 1
+
+
+def test_completed_session_current_question_is_null_and_rejects_answer(
+    client: TestClient, auth_headers_a: dict, session_a: SessionModel, db: Session
+):
+    # Complete the session
+    client.post(f"/api/sessions/{session_a.id}/complete", headers=auth_headers_a)
+
+    # 1. GET session returns current_question: null
+    resp = client.get(f"/api/sessions/{session_a.id}", headers=auth_headers_a)
+    assert resp.status_code == 200
+    assert resp.json()["current_question"] is None
+
+    # 2. Submitting answer to completed session returns 409
+    q1 = db.query(Question).filter(Question.session_id == session_a.id, Question.order_index == 1).first()
+    ans_resp = client.post(
+        f"/api/sessions/{session_a.id}/questions/{q1.id}/answer",
+        headers=auth_headers_a,
+        json={"answer_text": "Answer after completion", "source": "typed"},
+    )
+    assert ans_resp.status_code == 409
+    assert ans_resp.json()["error"]["code"] == "session_completed"
+
+
 def test_get_progress(
     client: TestClient, auth_headers_a: dict, session_a: SessionModel, db: Session
 ):
