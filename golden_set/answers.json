@@ -1,0 +1,122 @@
+[
+  {
+    "id": "q1_weak",
+    "question": "What is the difference between synchronous and asynchronous execution in Python?",
+    "category": "skill",
+    "difficulty": "easy",
+    "answer": "Async is faster than sync because it runs at the same time and doesn't wait for things.",
+    "human_scores": {"relevance": 5, "accuracy": 4, "depth": 2, "clarity": 5}
+  },
+  {
+    "id": "q1_mid",
+    "question": "What is the difference between synchronous and asynchronous execution in Python?",
+    "category": "skill",
+    "difficulty": "easy",
+    "answer": "In synchronous code, each operation blocks until it finishes. Asynchronous code with asyncio uses a single-threaded event loop to pause execution during I/O operations with await, letting other tasks execute in the meantime.",
+    "human_scores": {"relevance": 8, "accuracy": 7, "depth": 6, "clarity": 8}
+  },
+  {
+    "id": "q1_strong",
+    "question": "What is the difference between synchronous and asynchronous execution in Python?",
+    "category": "skill",
+    "difficulty": "easy",
+    "answer": "Synchronous code executes sequentially on a single thread where blocking calls (like disk or network I/O) stall the entire thread. Python's asynchronous model via asyncio utilizes cooperative multitasking on a single thread backed by an event loop. When a coroutine awaits an I/O operation, control yields back to the event loop to run ready tasks. It does not provide CPU parallelism due to the GIL; for CPU-bound tasks, multiprocessing or concurrent.futures is preferred.",
+    "human_scores": {"relevance": 9, "accuracy": 9, "depth": 9, "clarity": 9}
+  },
+  {
+    "id": "q2_weak",
+    "question": "How do database indexes improve query performance and what are their costs?",
+    "category": "skill",
+    "difficulty": "medium",
+    "answer": "Indexes make queries very fast like an index in a book. The downside is it uses disk space.",
+    "human_scores": {"relevance": 6, "accuracy": 5, "depth": 2, "clarity": 5}
+  },
+  {
+    "id": "q2_mid",
+    "question": "How do database indexes improve query performance and what are their costs?",
+    "category": "skill",
+    "difficulty": "medium",
+    "answer": "B-Tree indexes reduce search complexity from O(N) full table scans to O(log N) tree traversals for equality and range filters. The cost is slower INSERT, UPDATE, and DELETE operations because the index trees must be modified, plus additional memory and storage overhead.",
+    "human_scores": {"relevance": 8, "accuracy": 8, "depth": 6, "clarity": 8}
+  },
+  {
+    "id": "q2_strong",
+    "question": "How do database indexes improve query performance and what are their costs?",
+    "category": "skill",
+    "difficulty": "medium",
+    "answer": "Relational indexes (predominantly B-Trees) enable logarithmic lookups and range scans by maintaining sorted key pointers. Covering indexes can even eliminate table heap lookups entirely through index-only scans. The trade-offs include write amplification during DML operations—every insert or indexed column update necessitates rebalancing and page splits—along with increased buffer pool churn and storage overhead. Over-indexing also burdens the query planner with evaluating candidate paths.",
+    "human_scores": {"relevance": 10, "accuracy": 9, "depth": 9, "clarity": 9}
+  },
+  {
+    "id": "q3_weak",
+    "question": "Describe a project where you managed microservices communication.",
+    "category": "project",
+    "difficulty": "medium",
+    "answer": "We had two services and they called each other with REST APIs whenever user data changed.",
+    "human_scores": {"relevance": 5, "accuracy": 5, "depth": 2, "clarity": 4}
+  },
+  {
+    "id": "q3_mid",
+    "question": "Describe a project where you managed microservices communication.",
+    "category": "project",
+    "difficulty": "medium",
+    "answer": "In our checkout flow, the order service publishes events to RabbitMQ after persisting an order. The billing and inventory services consume these messages asynchronously. This decoupled our services and improved availability if billing had temporary downtime.",
+    "human_scores": {"relevance": 8, "accuracy": 7, "depth": 6, "clarity": 7}
+  },
+  {
+    "id": "q3_strong",
+    "question": "Describe a project where you managed microservices communication.",
+    "category": "project",
+    "difficulty": "medium",
+    "answer": "In our e-commerce platform, we transitioned synchronous REST calls between order and fulfillment services to an event-driven architecture using Kafka and the transactional outbox pattern with Debezium CDC. This guaranteed at-least-once message publishing without distributed transactions. Consumer idempotency was enforced via Redis deduplication keys with 24-hour TTLs, reducing end-to-end checkout failure rates from 4.2% during traffic spikes to under 0.05%.",
+    "human_scores": {"relevance": 9, "accuracy": 9, "depth": 9, "clarity": 9}
+  },
+  {
+    "id": "q4_weak",
+    "question": "How do you handle schema migrations in high-traffic relational databases?",
+    "category": "experience",
+    "difficulty": "hard",
+    "answer": "We run Alembic upgrade head when deploying the new release in the pipeline.",
+    "human_scores": {"relevance": 5, "accuracy": 4, "depth": 2, "clarity": 4}
+  },
+  {
+    "id": "q4_mid",
+    "question": "How do you handle schema migrations in high-traffic relational databases?",
+    "category": "experience",
+    "difficulty": "hard",
+    "answer": "We use multi-phase zero-downtime migrations. First we add the new nullable column, deploy code that writes to both old and new columns, backfill historical rows in batches, and finally deploy code reading only from the new column before dropping the old column.",
+    "human_scores": {"relevance": 8, "accuracy": 8, "depth": 7, "clarity": 8}
+  },
+  {
+    "id": "q4_strong",
+    "question": "How do you handle schema migrations in high-traffic relational databases?",
+    "category": "experience",
+    "difficulty": "hard",
+    "answer": "For zero-downtime schema evolution on tables with >100M rows, we follow expand/contract patterns with strict lock timeout limits (e.g. statement_timeout=2s, lock_timeout=1s) to prevent blocking concurrent transactions. Adding columns is done without defaults or using Postgres 11+ metadata-only defaults. New indexes are created using CREATE INDEX CONCURRENTLY. Backfills are chunked in primary-key ranges of 1,000 rows with sleep intervals to minimize replication lag. Deprecated columns are dropped only after observing zero read queries over a full release cycle.",
+    "human_scores": {"relevance": 10, "accuracy": 10, "depth": 10, "clarity": 9}
+  },
+  {
+    "id": "q5_weak",
+    "question": "Tell me about a time you had a technical disagreement with a team member.",
+    "category": "behavioral",
+    "difficulty": "medium",
+    "answer": "My teammate wanted GraphQL and I wanted REST. We argued in Slack and our manager picked REST.",
+    "human_scores": {"relevance": 5, "accuracy": 5, "depth": 2, "clarity": 4}
+  },
+  {
+    "id": "q5_mid",
+    "question": "Tell me about a time you had a technical disagreement with a team member.",
+    "category": "behavioral",
+    "difficulty": "medium",
+    "answer": "A colleague wanted to adopt DynamoDB for our analytics pipeline while I preferred Postgres with partitioning. We created a spike to test read latencies and operational complexity for our team size. The benchmarks showed Postgres was sufficient and didn't require our team to learn a new operational paradigm, so we agreed to proceed with Postgres.",
+    "human_scores": {"relevance": 8, "accuracy": 7, "depth": 6, "clarity": 8}
+  },
+  {
+    "id": "q5_strong",
+    "question": "Tell me about a time you had a technical disagreement with a team member.",
+    "category": "behavioral",
+    "difficulty": "medium",
+    "answer": "During architecture planning for a webhook dispatch service, a principal engineer advocated for an in-memory queue while I was concerned about message loss during pod restarts. Rather than debating hypotheticals, I drafted an RFC listing our SLA requirements (99.99% delivery guarantee) and simulated pod crash scenarios with Chaos Mesh. Seeing that an abrupt SIGKILL dropped ~15% of in-flight dispatches convinced the team to adopt Redis Streams with consumer groups and explicit ACKs. We delivered the project on time with zero data loss in production.",
+    "human_scores": {"relevance": 9, "accuracy": 9, "depth": 9, "clarity": 9}
+  }
+]
