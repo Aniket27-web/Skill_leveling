@@ -9,3 +9,4 @@ class ProgressItem(BaseModel):
     difficulty: str
 
     model_config = {"from_attributes": True}
+

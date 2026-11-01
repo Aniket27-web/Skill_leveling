@@ -35,3 +35,4 @@ def get_progress(
         )
         for s in completed_sessions
     ]
+

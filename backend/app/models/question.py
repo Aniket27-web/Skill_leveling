@@ -32,3 +32,4 @@ class Question(Base):
     __table_args__ = (
         Index("ix_questions_session_id_order_index", "session_id", "order_index"),
     )
+

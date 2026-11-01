@@ -64,3 +64,4 @@ def test_compute_overall_edge_cases():
     assert compute_overall([], 0) == 0.0
     # all zeros
     assert compute_overall([0, 0, 0], 3) == 0.0
+

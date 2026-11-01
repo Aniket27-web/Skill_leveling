@@ -83,3 +83,4 @@ class SessionSummarySchema(BaseModel):
 class CompleteSessionResponse(BaseModel):
     overall_score: float
     summary: SessionSummarySchema
+

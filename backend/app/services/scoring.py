@@ -45,3 +45,4 @@ def compute_overall(scores: List[Optional[int]], total: int) -> float:
 
     mean_val = sum(effective_scores) / float(total)
     return round(mean_val, 1)
+

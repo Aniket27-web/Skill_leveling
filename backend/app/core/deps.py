@@ -93,3 +93,4 @@ def get_owned_session(
     if not session:
         raise NotFoundException("Session not found", code="not_found")
     return session
+

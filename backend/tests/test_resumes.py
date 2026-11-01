@@ -94,3 +94,4 @@ def test_list_resumes_scoped_to_user(
     resumes_a = resp_a.json()
     assert all("user_b" not in r["filename"] for r in resumes_a)
     assert any("user_a" in r["filename"] for r in resumes_a)
+

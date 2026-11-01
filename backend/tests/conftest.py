@@ -163,3 +163,4 @@ def session_a(db: Session, user_a: User, resume_a: Resume) -> SessionModel:
     db.commit()
     db.refresh(session)
     return session
+

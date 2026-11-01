@@ -17,3 +17,4 @@ class Resume(Base):
 
     user = relationship("User", back_populates="resumes")
     sessions = relationship("Session", back_populates="resume")
+

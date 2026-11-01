@@ -107,3 +107,4 @@ def list_resumes(
         .all()
     )
     return resumes
+

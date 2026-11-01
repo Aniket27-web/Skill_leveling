@@ -356,3 +356,4 @@ def test_get_session_report(
     assert resp.headers["content-type"] == "application/pdf"
     assert "attachment; filename=" in resp.headers["content-disposition"]
     assert resp.content.startswith(b"%PDF-")
+

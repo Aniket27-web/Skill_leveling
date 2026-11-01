@@ -18,3 +18,4 @@ class AnswerResponse(BaseModel):
     ideal_outline: List[str] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
+

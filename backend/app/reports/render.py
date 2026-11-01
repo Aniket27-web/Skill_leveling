@@ -37,3 +37,4 @@ def render_report(session: Dict[str, Any]) -> bytes:
         b"%%EOF\n"
     )
     return pdf
+

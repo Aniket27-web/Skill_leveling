@@ -28,3 +28,4 @@ class UserResponse(BaseModel):
     email: str
 
     model_config = {"from_attributes": True}
+

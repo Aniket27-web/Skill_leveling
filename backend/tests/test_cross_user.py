@@ -53,3 +53,4 @@ def test_cross_user_isolation_matrix(
     assert resp.status_code == 404
     err = resp.json()
     assert err["error"]["code"] == "not_found"
+

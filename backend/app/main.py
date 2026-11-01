@@ -58,3 +58,4 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(resumes_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")
+
