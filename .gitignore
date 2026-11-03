@@ -51,3 +51,11 @@ htmlcov/
 # Node / Frontend
 node_modules/
 .npm/
+node_modules/
+dist/
+dist-ssr/
+*.local
+.DS_Store
+*.log
+.vscode/
+.idea/
