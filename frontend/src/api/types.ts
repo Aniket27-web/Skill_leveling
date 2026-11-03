@@ -77,6 +77,7 @@ export interface AnswerResponse {
   improvements: string[];
   missed_points: string[];
   ideal_outline: string[];
+  interviewer_response?: string | null;
 }
 
 export interface CompleteResponse {

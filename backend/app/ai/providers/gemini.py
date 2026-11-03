@@ -1,5 +1,6 @@
 import os
 import httpx
+from app.core.config import settings
 from .base import BaseLLMProvider
 
 
@@ -19,8 +20,8 @@ class GeminiProvider(BaseLLMProvider):
     }
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
-        self.api_key = api_key or os.getenv("LLM_API_KEY", "")
-        configured_model = model or os.getenv("LLM_MODEL", "")
+        self.api_key = api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY)
+        configured_model = model or os.getenv("LLM_MODEL", settings.LLM_MODEL)
         # Gemini 1.5 Flash has been retired. Keep old local .env files working
         # by upgrading that known model ID to Google's current Flash model.
         legacy_models = {"gemini-1.5-flash": "gemini-3.8-flash"}

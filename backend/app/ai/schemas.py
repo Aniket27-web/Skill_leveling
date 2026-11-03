@@ -33,6 +33,7 @@ class Evaluation(BaseModel):
     improvements: list[str] = Field(default_factory=list, description="1-3 key areas for improvement")
     missed_points: list[str] = Field(default_factory=list, description="Key concepts or points candidate missed")
     ideal_outline: list[str] = Field(default_factory=list, description="3-5 bullet points of an ideal response")
+    interviewer_response: str = Field(default="", max_length=320, description="One brief, natural spoken response that acknowledges a specific part of the candidate's answer and smoothly bridges to the next interview question. Do not mention scores or give evaluation feedback.")
     prompt_version: str = Field(default="evaluate_v1", description="Version of the evaluation prompt used")
 
 

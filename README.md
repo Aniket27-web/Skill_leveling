@@ -14,7 +14,7 @@ An AI-driven mock interview coach designed to conduct technical interviews, eval
 - **AI feedback:** Scores are calculated by the server from relevance, accuracy, depth, and clarity dimensions. Each answer includes strengths, improvements, missed points, and an ideal answer outline.
 - **Session review:** See an overall score, AI summary, per-question feedback, and a downloadable PDF report.
 - **History and progress:** Resume in-progress sessions, delete past sessions, and follow score trends over time.
-- **AI provider settings:** A signed-in user can select OpenAI, Anthropic, Gemini, or an OpenAI-compatible endpoint, test the connection, and save a personal API key. The backend encrypts the key at rest and never returns it to the browser. Configure `CREDENTIAL_ENCRYPTION_KEY` in production and keep it stable so saved credentials remain decryptable. The app warns users when they start without personal provider settings and uses the server-configured provider (or its configured demo provider).
+- **AI provider settings:** The application uses one server-configured provider for all accounts. API keys stay in `backend/.env`; users cannot add or view provider keys in the browser. The AI settings page shows provider status and can test the server connection.
 
 Browser speech synthesis and speech recognition depend on browser support and microphone permissions. Audio mode uses browser speech for the interviewer and voice transcription for answers. Video mode provides a local camera preview alongside voice practice; it is not a live video call with a remote interviewer. The optional VRM/GLB asset URL must point to a browser-accessible model file.
 
@@ -28,10 +28,10 @@ Browser speech synthesis and speech recognition depend on browser support and mi
 
 ### 2. Environment Setup
 
-Copy `.env.example` to `.env` in the project root or configure environment variables directly:
+Copy `backend/.env.example` to `backend/.env`, then set the provider and API key there. Do not put LLM credentials in the frontend `.env` file:
 
 ```bash
-cp .env.example .env
+cp backend/.env.example backend/.env
 ```
 
 Key environment configurations:
@@ -39,9 +39,12 @@ Key environment configurations:
 - `ENVIRONMENT`: `development` | `production` | `test`
 - `CORS_ORIGINS`: Allowed origins (e.g. `http://localhost:5173`)
 - `SECRET_KEY`: Random 32+ character key for JWT token signing
-- `CREDENTIAL_ENCRYPTION_KEY`: Stable, strong secret used to encrypt account API keys at rest (required in production)
+- `CREDENTIAL_ENCRYPTION_KEY`: Legacy setting; user-managed provider keys are no longer used
 - `DATABASE_URL`: Database connection string (`sqlite:///./interview_coach.db` by default)
 - `LLM_PROVIDER`: `fake` | `anthropic` | `openai` | `gemini` (default: `fake`)
+- `LLM_API_KEY`: Server-side key for the selected provider
+- `LLM_MODEL`: Optional model ID for that provider
+- `LLM_BASE_URL`: Required only for `openai_compatible`
 - `LLM_FAKE_MODE`: `ok` | `empty` | `malformed` | `timeout` | `rate_limit` | `out_of_range`
 
 ### 3. Installation

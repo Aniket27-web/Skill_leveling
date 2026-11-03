@@ -106,5 +106,51 @@ describe('FeedbackCard component', () => {
     fireEvent.click(continueBtn);
     expect(onContinueMock).toHaveBeenCalledTimes(1);
   });
+
+  it('renders Solo Leveling level-up gain and penalty banners when deltaInfo is provided', () => {
+    // 1. Correct gain
+    const { rerender } = render(
+      <FeedbackCard
+        evalStatus="done"
+        score={9}
+        dimensions={{ relevance: 9, accuracy: 9, depth: 8, clarity: 9 }}
+        strengths={['Flawless']}
+        improvements={[]}
+        isLastQuestion={false}
+        deltaInfo={{
+          isCorrect: true,
+          score: 9,
+          delta: 10,
+          reason: 'Correct evaluation (9/10) gained +10 Level points!',
+        }}
+        onNextOrFinish={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Hunter Awakening · Level Progress/i)).toBeInTheDocument();
+    expect(screen.getByText('+10 LVL')).toBeInTheDocument();
+
+    // 2. Penalty deduction
+    rerender(
+      <FeedbackCard
+        evalStatus="done"
+        score={4}
+        dimensions={{ relevance: 4, accuracy: 4, depth: 3, clarity: 5 }}
+        strengths={[]}
+        improvements={['Needs depth']}
+        isLastQuestion={false}
+        deltaInfo={{
+          isCorrect: false,
+          score: 4,
+          delta: -3.3,
+          reason: 'Answer scored below threshold (4/10): -3.3 Penalty points applied!',
+        }}
+        onNextOrFinish={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/System Penalty · 1\/3 Deduction Applied/i)).toBeInTheDocument();
+    expect(screen.getByText('-3.3 LVL')).toBeInTheDocument();
+  });
 });
 

@@ -23,6 +23,7 @@ def evaluate_answer(
     answer_text: str,
     difficulty: str,
     resume_text: str | None = None,
+    next_question: str | None = None,
     provider_name: str | None = None,
     api_key: str | None = None,
     model: str | None = None,
@@ -38,6 +39,7 @@ def evaluate_answer(
         .replace("{question_text}", question_text)
         .replace("{resume_text}", safe_resume)
         .replace("{answer_text}", answer_text)
+        .replace("{next_question}", next_question or "This is the final question; close the conversation briefly.")
     )
 
     messages = [{"role": "user", "content": prompt_content}]

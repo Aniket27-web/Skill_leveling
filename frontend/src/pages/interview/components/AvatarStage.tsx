@@ -38,6 +38,8 @@ function PlaceholderAvatar({ speaking, listening, viseme }: AvatarStageProps) {
   const blinkAt = useRef(2.5);
   const blink = useRef(0);
   const color = useMemo(() => new THREE.Color('#d8a37f'), []);
+  const hairColor = '#29221f';
+  const jacketColor = '#202c3d';
 
   useFrame(({ clock }, delta) => {
     const time = clock.getElapsedTime();
@@ -60,19 +62,27 @@ function PlaceholderAvatar({ speaking, listening, viseme }: AvatarStageProps) {
   });
 
   return <group position={[0, -0.98, 0]}>
-    <mesh ref={torso} position={[0, -0.22, 0]} castShadow><capsuleGeometry args={[0.46, 0.9, 6, 16]} /><meshStandardMaterial color="#23334d" roughness={0.76} /></mesh>
-    <mesh position={[0, 0.23, 0.04]}><capsuleGeometry args={[0.2, 0.24, 4, 12]} /><meshStandardMaterial color={color} roughness={0.82} /></mesh>
+    <mesh ref={torso} position={[0, -0.22, 0]} castShadow><capsuleGeometry args={[0.48, 0.88, 8, 24]} /><meshStandardMaterial color={jacketColor} roughness={0.7} metalness={0.02} /></mesh>
+    <mesh position={[0, 0.23, 0.04]}><capsuleGeometry args={[0.19, 0.25, 6, 16]} /><meshStandardMaterial color={color} roughness={0.76} /></mesh>
+    <mesh position={[0, 0.08, 0.36]} rotation={[0.12, 0, 0]}><boxGeometry args={[0.23, 0.35, 0.025]} /><meshStandardMaterial color="#e8edf3" roughness={0.82} /></mesh>
+    <mesh position={[-0.15, 0.1, 0.365]} rotation={[0, 0, -0.24]}><boxGeometry args={[0.19, 0.34, 0.04]} /><meshStandardMaterial color="#34465f" roughness={0.72} /></mesh>
+    <mesh position={[0.15, 0.1, 0.365]} rotation={[0, 0, 0.24]}><boxGeometry args={[0.19, 0.34, 0.04]} /><meshStandardMaterial color="#34465f" roughness={0.72} /></mesh>
     <group ref={head} position={[0, 0.84, 0]}>
-      <mesh castShadow><sphereGeometry args={[0.48, 32, 32]} /><meshStandardMaterial color={color} roughness={0.82} /></mesh>
-      <mesh position={[0, 0.31, -0.01]}><sphereGeometry args={[0.47, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.48]} /><meshStandardMaterial color="#30251f" roughness={0.9} /></mesh>
+      <mesh castShadow scale={[0.94, 1.08, 0.9]}><sphereGeometry args={[0.46, 48, 40]} /><meshStandardMaterial color={color} roughness={0.73} /></mesh>
+      <mesh position={[0, 0.3, -0.015]}><sphereGeometry args={[0.465, 40, 24, 0, Math.PI * 2, 0, Math.PI * 0.52]} /><meshStandardMaterial color={hairColor} roughness={0.88} /></mesh>
+      {[-1, 1].map((side) => <mesh key={`ear-${side}`} position={[side * 0.435, -0.02, 0.015]} scale={[0.12, 0.16, 0.075]}><sphereGeometry args={[1, 24, 20]} /><meshStandardMaterial color="#c99375" roughness={0.78} /></mesh>)}
       {[-0.17, 0.17].map((x, index) => <group key={x} position={[x, 0.05, 0.41]}>
-        <mesh><sphereGeometry args={[0.075, 18, 16]} /><meshStandardMaterial color="#fffdf8" roughness={0.35} /></mesh>
-        <mesh position={[0, 0, 0.062]}><sphereGeometry args={[0.034, 12, 12]} /><meshStandardMaterial color="#344761" roughness={0.25} /></mesh>
+        <mesh scale={[1.25, 0.82, 0.48]}><sphereGeometry args={[0.075, 24, 20]} /><meshStandardMaterial color="#fffdf8" roughness={0.3} /></mesh>
+        <mesh position={[0, 0, 0.05]}><sphereGeometry args={[0.033, 20, 16]} /><meshStandardMaterial color="#536b7c" roughness={0.3} /></mesh>
+        <mesh position={[0, 0, 0.079]}><sphereGeometry args={[0.016, 16, 12]} /><meshStandardMaterial color="#17202a" roughness={0.3} /></mesh>
+        <mesh position={[-0.008, 0.014, 0.09]}><sphereGeometry args={[0.006, 12, 10]} /><meshBasicMaterial color="white" /></mesh>
         <mesh ref={(node) => { if (node) lids.current[index] = node; }} position={[0, 0.055, 0.02]} scale={[1.18, 0.01, 0.25]}><sphereGeometry args={[0.071, 16, 12]} /><meshStandardMaterial color={color} roughness={0.82} /></mesh>
       </group>)}
-      <mesh position={[0, -0.03, 0.46]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color="#bd8667" roughness={0.8} /></mesh>
-      <mesh ref={mouth} position={[0, -0.19, 0.433]} scale={[0.14, 0.018, 0.04]}><sphereGeometry args={[1, 20, 14]} /><meshStandardMaterial color="#5c2430" roughness={0.45} /></mesh>
-      <mesh position={[0, -0.11, 0.429]} scale={[0.18, 0.025, 0.02]}><sphereGeometry args={[1, 20, 12]} /><meshStandardMaterial color="#9e5d56" roughness={0.6} /></mesh>
+      {[-0.17, 0.17].map((x) => <mesh key={`brow-${x}`} position={[x, 0.15, 0.423]} rotation={[0, 0, x < 0 ? 0.08 : -0.08]}><capsuleGeometry args={[0.023, 0.105, 4, 12]} /><meshStandardMaterial color="#49362e" roughness={0.88} /></mesh>)}
+      <mesh position={[0, -0.055, 0.435]} scale={[0.078, 0.15, 0.11]}><sphereGeometry args={[1, 24, 20]} /><meshStandardMaterial color="#c28b6c" roughness={0.76} /></mesh>
+      <mesh position={[0, -0.13, 0.485]} scale={[0.08, 0.035, 0.04]}><sphereGeometry args={[1, 18, 14]} /><meshStandardMaterial color="#bd8667" roughness={0.78} /></mesh>
+      <mesh ref={mouth} position={[0, -0.22, 0.418]} scale={[0.13, 0.018, 0.035]}><sphereGeometry args={[1, 24, 18]} /><meshStandardMaterial color="#672f35" roughness={0.54} /></mesh>
+      <mesh position={[0, -0.17, 0.415]} scale={[0.15, 0.025, 0.018]}><sphereGeometry args={[1, 24, 16]} /><meshStandardMaterial color="#a96560" roughness={0.66} /></mesh>
     </group>
   </group>;
 }

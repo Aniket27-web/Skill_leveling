@@ -1,12 +1,13 @@
 import os
 import httpx
+from app.core.config import settings
 from .base import BaseLLMProvider
 
 
 class AnthropicProvider(BaseLLMProvider):
     def __init__(self, api_key: str | None = None, model: str | None = None):
-        self.api_key = api_key or os.getenv("LLM_API_KEY", "")
-        configured_model = (model or os.getenv("LLM_MODEL", "")).strip()
+        self.api_key = api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY)
+        configured_model = (model or os.getenv("LLM_MODEL", settings.LLM_MODEL)).strip()
         legacy_models = {
             "claude-3-5-sonnet-20241022": "claude-sonnet-5",
             "claude-3-5-sonnet-20240620": "claude-sonnet-5",

@@ -1,8 +1,8 @@
 {
-  "name": "ai-mock-interview-coach",
+  "name": "skill-leveling",
   "version": "1.0.0",
   "private": true,
-  "description": "AI Mock Interview Coach - Root Orchestrator for Backend and Frontend",
+  "description": "Skill Leveling - Solo Leveling Inspired AI Technical Interview Arena",
   "scripts": {
     "start": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",
     "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",

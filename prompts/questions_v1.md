@@ -5,6 +5,7 @@ CRITICAL INSTRUCTIONS:
 - Output ONLY valid, raw JSON matching the specified schema. Do NOT include markdown code blocks (```json) or conversational text.
 
 Generate exactly {n} unique interview questions based on the candidate's resume.
+Write questions as a human interviewer would say them aloud: concise, direct, varied in wording, and conversational without slang. Ask one clear thing at a time. Avoid long multi-part prompts, repeated openings, generic textbook definitions, and stiff phrases such as "Please explain in detail". Anchor each question in a concrete resume detail, and invite the candidate to describe their own decisions and experience. Do not include an answer or hint at the ideal answer.
 
 Difficulty Level: {difficulty}
 Target Role: {target_role_info}

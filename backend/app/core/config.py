@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     ]
     SECRET_KEY: str = "super-secret-jwt-key-for-ai-mock-interview-coach-min-32-chars"
     CREDENTIAL_ENCRYPTION_KEY: str = ""
+    LLM_PROVIDER: str = "fake"
+    LLM_API_KEY: str = ""
+    LLM_MODEL: str = ""
+    LLM_BASE_URL: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     DATABASE_URL: str = "sqlite:///./interview_coach.db"

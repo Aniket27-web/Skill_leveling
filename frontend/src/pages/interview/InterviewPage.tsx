@@ -13,6 +13,8 @@ import { CountdownTimer } from './components/CountdownTimer';
 import { FeedbackCard } from './components/FeedbackCard';
 import { DeliveryStatsView } from './components/DeliveryStatsView';
 import { AudioWaveform } from './components/AudioWaveform';
+import { HunterStatusBar } from '../../components/HunterStatusBar';
+import { applyQuestionResultToHunter, LevelDeltaCalculation } from '../../services/skillLeveling';
 
 const AvatarStage = lazy(() => import('./components/AvatarStage').then((module) => ({ default: module.AvatarStage })));
 type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo';
@@ -95,7 +97,11 @@ export const InterviewPage: React.FC = () => {
   const [microphoneEnabled, setMicrophoneEnabled] = useState(false);
   const [hasJoinedVideoCall, setHasJoinedVideoCall] = useState(false);
   const [mediaSetupComplete, setMediaSetupComplete] = useState(false);
+  const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState('');
+  const [interviewerResponse, setInterviewerResponse] = useState<string | null>(null);
   const [justEvaluatedFeedback, setJustEvaluatedFeedback] = useState<any | null>(null);
+  const [latestDelta, setLatestDelta] = useState<LevelDeltaCalculation | null>(null);
 
   // Cached idempotency keys per question id
   const idempotencyKeysRef = useRef<Record<string, string>>({});
@@ -121,6 +127,7 @@ export const InterviewPage: React.FC = () => {
     }
     setNetworkError(null);
     setJustEvaluatedFeedback(null);
+    setInterviewerResponse(null);
   }, [currentQId, sessionId]);
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -171,6 +178,66 @@ export const InterviewPage: React.FC = () => {
     },
   });
 
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setSpeechVoices(voices);
+      setSelectedVoiceName((current) => {
+        if (current && voices.some((voice) => voice.name === current)) return current;
+        const saved = window.localStorage.getItem('interview_voice_name');
+        if (saved && voices.some((voice) => voice.name === saved)) return saved;
+        const preferred = voices.filter((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in')).sort((a, b) => {
+          const score = (voice: SpeechSynthesisVoice) => {
+            const lang = voice.lang.toLowerCase();
+            const name = voice.name.toLowerCase();
+            return (lang.startsWith('en-us') ? 100 : lang.startsWith('en-gb') ? 80 : lang.startsWith('en-au') ? 60 : lang.startsWith('en') ? 20 : 0)
+              + (/natural|neural|google|microsoft|aria|jenny|samantha/.test(name) ? 25 : 0)
+              - (lang.includes('en-in') || /india|ravi|heera/.test(name) ? 100 : 0);
+          };
+          return score(b) - score(a);
+        })[0];
+        if (preferred) window.localStorage.setItem('interview_voice_name', preferred.name);
+        return preferred?.name || '';
+      });
+    };
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
+  }, []);
+
+  const speakText = (text: string, listenAfter: boolean = false) => {
+    if (!text.trim() || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voice = speechVoices.find((item) => item.name === selectedVoiceName);
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+    } else {
+      utterance.lang = 'en-US';
+    }
+    utterance.rate = 0.92;
+    utterance.pitch = 1.0;
+    utterance.onstart = () => setIsInterviewerSpeaking(true);
+    utterance.onend = () => {
+      setIsInterviewerSpeaking(false);
+      setViseme('neutral');
+      if (listenAfter && session?.interview_mode === 'video' && hasJoinedVideoCall && microphoneEnabled) startListening();
+    };
+    utterance.onerror = () => { setIsInterviewerSpeaking(false); setViseme('neutral'); };
+    utterance.onboundary = (event) => {
+      const token = text.slice(event.charIndex, event.charIndex + 3).toLowerCase();
+      setViseme(/[a]/.test(token) ? 'aa' : /[eiy]/.test(token) ? 'ee' : /[o]/.test(token) ? 'oh' : /[u]/.test(token) ? 'oo' : 'neutral');
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const chooseVoice = (name: string) => {
+    setSelectedVoiceName(name);
+    window.localStorage.setItem('interview_voice_name', name);
+  };
+
   // 4. Delivery stats (WPM and filler words "um", "uh", "like")
   const deliveryStats = useDeliveryStats(answerText, !justEvaluatedFeedback);
 
@@ -188,6 +255,7 @@ export const InterviewPage: React.FC = () => {
 
     setIsSubmitting(true);
     setNetworkError(null);
+    setInterviewerResponse(null);
 
     const idempotencyKey = getIdempotencyKey(currentQId);
 
@@ -205,6 +273,18 @@ export const InterviewPage: React.FC = () => {
       // Clear draft storage upon confirmed submission
       sessionStorage.removeItem(`draft_answer_${sessionId}_${currentQId}`);
       setJustEvaluatedFeedback(response);
+      setInterviewerResponse(response.interviewer_response || null);
+
+      // Solo Leveling Hunter level calculation & penalty
+      try {
+        const { deltaInfo } = applyQuestionResultToHunter(response.score, session?.difficulty || 'medium');
+        setLatestDelta(deltaInfo);
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.error('Failed to update hunter profile', e);
+      }
+
+      if (session?.interview_mode !== 'text' && response.interviewer_response) speakText(response.interviewer_response);
       resetVoiceTracking();
     } catch (err: any) {
       // On network or submission error: DO NOT LOSE USER'S TEXT
@@ -291,21 +371,7 @@ export const InterviewPage: React.FC = () => {
       setVoiceToast('Question audio is not supported by this browser.');
       return;
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(currentQ.text);
-    utterance.rate = 0.95;
-    utterance.onstart = () => setIsInterviewerSpeaking(true);
-    utterance.onend = () => {
-      setIsInterviewerSpeaking(false);
-      setViseme('neutral');
-      if (session?.interview_mode === 'video' && hasJoinedVideoCall && microphoneEnabled) startListening();
-    };
-    utterance.onerror = () => { setIsInterviewerSpeaking(false); setViseme('neutral'); };
-    utterance.onboundary = (event) => {
-      const token = currentQ.text.slice(event.charIndex, event.charIndex + 3).toLowerCase();
-      setViseme(/[a]/.test(token) ? 'aa' : /[eiy]/.test(token) ? 'ee' : /[o]/.test(token) ? 'oh' : /[u]/.test(token) ? 'oo' : 'neutral');
-    };
-    window.speechSynthesis.speak(utterance);
+    speakText(currentQ.text, true);
   };
 
   useEffect(() => {
@@ -463,6 +529,13 @@ export const InterviewPage: React.FC = () => {
         questionId: currentQId,
       });
       setJustEvaluatedFeedback(resp);
+      try {
+        const { deltaInfo } = applyQuestionResultToHunter(resp.score, session?.difficulty || 'medium');
+        setLatestDelta(deltaInfo);
+        window.dispatchEvent(new Event('storage'));
+      } catch (e) {
+        console.error('Failed to update hunter profile', e);
+      }
     } catch (err: any) {
       setNetworkError(err?.message || 'Retry evaluation failed. Please try again.');
     }
@@ -488,6 +561,7 @@ export const InterviewPage: React.FC = () => {
     } else {
       // Clear current evaluated feedback and refetch session to advance
       setJustEvaluatedFeedback(null);
+      setLatestDelta(null);
       setAnswerText('');
       await refetchSession();
     }
@@ -497,9 +571,9 @@ export const InterviewPage: React.FC = () => {
   if (isSessionLoading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
-        <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-4" />
-        <h2 className="text-lg font-semibold text-slate-800">Loading interview room...</h2>
-        <p className="text-sm text-slate-500 mt-1">Restoring server-driven interview state</p>
+        <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+        <h2 className="text-lg font-bold text-slate-800 dark:text-purple-200">Loading interview room...</h2>
+        <p className="text-sm text-slate-500 dark:text-purple-400/70 mt-1">Awakening hunter session & technical dungeon state</p>
       </div>
     );
   }
@@ -507,15 +581,15 @@ export const InterviewPage: React.FC = () => {
   // Error state
   if (sessionError || !session) {
     return (
-      <div className="max-w-xl mx-auto my-12 p-6 rounded-2xl bg-white border border-red-200 shadow-sm text-center">
-        <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-900">Unable to load session</h2>
-        <p className="text-sm text-slate-600 mt-1">
+      <div className="max-w-xl mx-auto my-12 p-8 rounded-2xl bg-white dark:bg-[#0d071a] border border-purple-200 dark:border-purple-900/60 shadow-xl text-center">
+        <AlertCircle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Unable to load session</h2>
+        <p className="text-sm text-slate-600 dark:text-purple-300/80 mt-1">
           {sessionError?.message || 'Session not found or belongs to another user.'}
         </p>
         <button
           onClick={() => navigate('/dashboard')}
-          className="mt-5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 transition"
+          className="mt-6 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 text-white text-sm font-bold shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:from-purple-600 hover:to-indigo-500 transition"
         >
           Return to Dashboard
         </button>
@@ -528,19 +602,19 @@ export const InterviewPage: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
         <div className="relative">
-          <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-            <Sparkles className="h-8 w-8 text-blue-600 animate-spin" />
+          <div className="h-16 w-16 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center animate-pulse">
+            <Sparkles className="h-8 w-8 text-purple-600 dark:text-purple-400 animate-spin" />
           </div>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Preparing your next question...</h2>
-          <p className="text-sm text-slate-500 mt-1">
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Preparing your next dungeon challenge...</h2>
+          <p className="text-sm text-slate-500 dark:text-purple-300/70 mt-1">
             Analyzing your resume context and formulating tailored follow-ups.
           </p>
         </div>
         <button
           onClick={() => refetchSession()}
-          className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-800 underline"
+          className="mt-2 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
         >
           Check now
         </button>
@@ -574,6 +648,15 @@ export const InterviewPage: React.FC = () => {
                 <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium ${microphoneEnabled ? 'bg-[#3c4043] hover:bg-[#4b4f52]' : 'bg-rose-600 hover:bg-rose-700'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}{microphoneEnabled ? 'Microphone on' : 'Microphone off'}</button>
                 <button type="button" onClick={toggleCamera} aria-pressed={cameraEnabled} className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium ${cameraEnabled ? 'bg-[#3c4043] hover:bg-[#4b4f52]' : 'bg-rose-600 hover:bg-rose-700'}`}>{cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}{cameraEnabled ? 'Camera on' : 'Camera off'}</button>
               </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between"><label htmlFor="interviewer-voice" className="block text-xs font-medium text-white/65">Interviewer voice</label><button type="button" onClick={() => speakText('Hello, I will be conducting your interview today. Take your time and answer in your own words.')} disabled={!speechVoices.length} className="text-xs font-medium text-[#aecbfa] hover:text-white disabled:opacity-40">Preview voice</button></div>
+                <select id="interviewer-voice" value={selectedVoiceName} onChange={(event) => chooseVoice(event.target.value)} disabled={!speechVoices.length} className="w-full rounded-xl border border-white/15 bg-[#303134] px-3 py-3 text-sm text-white outline-none focus:border-[#8ab4f8] disabled:opacity-60">
+                  {speechVoices.some((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in'))
+                    ? speechVoices.filter((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in')).map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name}>{voice.name} · {voice.lang}</option>)
+                    : <option value="">No US/UK English voice installed</option>}
+                </select>
+                <p className="text-xs text-white/45">Choose an English voice from your browser. US and UK voices are preferred; available voice quality depends on your browser and operating system.</p>
+              </div>
               {voiceToast && <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">{voiceToast}</p>}
               {!isSpeechSupported && <p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-100">Voice answers need speech recognition. Open this interview in Chrome or Edge to join.</p>}
               <button type="button" onClick={() => { setVoiceToast(null); setHasJoinedVideoCall(true); }} disabled={!mediaSetupComplete || !microphoneEnabled || !isSpeechSupported || !currentQ} className="w-full rounded-full bg-[#8ab4f8] px-6 py-3.5 font-semibold text-[#202124] transition hover:bg-[#aecbfa] disabled:cursor-not-allowed disabled:opacity-40">{mediaSetupComplete ? 'Join interview' : 'Checking camera and microphone…'}</button>
@@ -587,19 +670,22 @@ export const InterviewPage: React.FC = () => {
 
   return (
     <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-5 px-3 py-5 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
+      {/* Solo Leveling Hunter Status Bar */}
+      <HunterStatusBar />
+
       {/* Voice / Permission Toast Notification */}
       {voiceToast && (
         <div
-          className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-sm flex items-center justify-between shadow-sm animate-fade-in"
+          className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200 text-sm flex items-center justify-between shadow-sm animate-fade-in"
           role="alert"
         >
           <div className="flex items-center space-x-2">
-            <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <span>{voiceToast}</span>
           </div>
           <button
             onClick={() => setVoiceToast(null)}
-            className="text-xs text-amber-700 font-semibold hover:underline ml-3"
+            className="text-xs text-amber-700 dark:text-amber-400 font-semibold hover:underline ml-3"
           >
             Dismiss
           </button>
@@ -607,17 +693,20 @@ export const InterviewPage: React.FC = () => {
       )}
 
       {/* Top Header: Progress and Timer */}
-      <div className={`space-y-3 rounded-2xl border p-5 shadow-sm ${session.interview_mode === 'video' ? 'border-slate-700 bg-[#202124] text-white' : 'border-slate-200 bg-white'}`}>
+      <div className={`space-y-3 rounded-2xl border p-5 shadow-sm ${session.interview_mode === 'video' ? 'border-slate-700 bg-[#202124] text-white' : 'border-purple-200 bg-white dark:border-purple-900/60 dark:bg-[#0d071a]'}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
-            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${session.interview_mode === 'video' ? 'border-white/15 bg-white/10 text-white' : 'border-blue-100 bg-blue-50 text-blue-600'}`}>
+            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${session.interview_mode === 'video' ? 'border-white/15 bg-white/10 text-white' : 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300'}`}>
               Question {orderIndex} of {totalQuestions}
             </span>
             {currentQ?.category && (
-              <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${session.interview_mode === 'video' ? 'bg-white/10 text-white/75' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${session.interview_mode === 'video' ? 'bg-white/10 text-white/75' : 'bg-slate-100 text-slate-600 dark:bg-[#180e30] dark:text-purple-300'}`}>
                 Category: {currentQ.category}
               </span>
             )}
+            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wide text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800 hidden sm:inline-block">
+              {session.difficulty} Dungeon
+            </span>
           </div>
 
           {/* Bonus Timer */}
@@ -644,24 +733,24 @@ export const InterviewPage: React.FC = () => {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-purple-100 dark:bg-purple-950/80 rounded-full h-2 overflow-hidden">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+            className="bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 h-2 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(147,51,234,0.5)]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      {isDurationExpired && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Your interview time is up. We are preparing your summary.</div>}
+      {isDurationExpired && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Your dungeon time is up. We are finalizing your hunter debrief.</div>}
 
       {/* Question Card */}
-      {session.interview_mode !== 'video' && <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      {session.interview_mode !== 'video' && <div className="space-y-4 rounded-2xl border border-purple-200 bg-white p-6 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start space-x-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 font-bold text-sm">Q{orderIndex}</div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug">{currentQ?.text || 'Loading question prompt...'}</h1>
+            <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center flex-shrink-0 font-bold text-sm font-mono border border-purple-200 dark:border-purple-800">Q{orderIndex}</div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-snug">{currentQ?.text || 'Formulating dungeon challenge prompt...'}</h1>
           </div>
-          {session.interview_mode !== 'text' && <button type="button" onClick={speakQuestion} aria-label="Read question aloud" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"><Volume2 className="h-4 w-4" /> Play question</button>}
+          {session.interview_mode !== 'text' && <button type="button" onClick={speakQuestion} aria-label="Read question aloud" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"><Volume2 className="h-4 w-4" /> Play question</button>}
         </div>
       </div>}
 
@@ -685,7 +774,7 @@ export const InterviewPage: React.FC = () => {
             <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} />
           </Suspense>
           <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
-            <p className="max-w-3xl rounded-lg bg-black/45 px-4 py-2 text-base font-medium leading-relaxed shadow sm:text-xl">{currentQ?.text || 'Loading question…'}</p>
+            <p className="max-w-3xl rounded-lg bg-black/45 px-4 py-2 text-base font-medium leading-relaxed shadow sm:text-xl">{isInterviewerSpeaking && interviewerResponse ? interviewerResponse : currentQ?.text || 'Loading question…'}</p>
           </div>
           <div className="absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border border-white/20 bg-[#3c4043] shadow-xl sm:right-5 sm:top-5 sm:h-40 sm:w-56">
             {cameraEnabled ? <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500 text-lg font-semibold">You</span><span className="text-xs">Camera off</span></div>}
@@ -714,20 +803,20 @@ export const InterviewPage: React.FC = () => {
       {/* Evaluating Skeleton / Loading Banner */}
       {isSubmitting && (
         <div
-          className="bg-blue-50/70 border border-blue-200 rounded-2xl p-8 text-center space-y-3 animate-pulse"
+          className="bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 rounded-2xl p-8 text-center space-y-3 animate-pulse shadow-[0_0_20px_rgba(147,51,234,0.15)]"
           data-testid="evaluating-skeleton"
         >
-          <div className="inline-flex items-center justify-center p-3 rounded-full bg-blue-100 text-blue-600 mb-1">
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 mb-1">
             <Sparkles className="h-6 w-6 animate-spin" />
           </div>
-          <h3 className="text-base font-bold text-blue-950">Evaluating your answer...</h3>
-          <p className="text-xs text-blue-700 max-w-md mx-auto">
-            Our AI interviewer is scoring your relevance, technical depth, accuracy, and clarity.
+          <h3 className="text-base font-bold text-slate-900 dark:text-purple-100">Evaluating your answer...</h3>
+          <p className="text-xs text-purple-700 dark:text-purple-300/80 max-w-md mx-auto">
+            System AI is measuring technical depth, relevance, accuracy, and clarity. Hunter level adjustment pending.
           </p>
           <div className="flex justify-center space-x-2 pt-2">
-            <div className="h-2 w-16 bg-blue-200 rounded-full animate-bounce" />
-            <div className="h-2 w-16 bg-blue-200 rounded-full animate-bounce delay-100" />
-            <div className="h-2 w-16 bg-blue-200 rounded-full animate-bounce delay-200" />
+            <div className="h-2 w-16 bg-purple-300 dark:bg-purple-700 rounded-full animate-bounce" />
+            <div className="h-2 w-16 bg-purple-300 dark:bg-purple-700 rounded-full animate-bounce delay-100" />
+            <div className="h-2 w-16 bg-purple-300 dark:bg-purple-700 rounded-full animate-bounce delay-200" />
           </div>
         </div>
       )}
@@ -745,6 +834,7 @@ export const InterviewPage: React.FC = () => {
           isLastQuestion={isLastQuestion}
           isRetrying={retryEvalMutation.isPending}
           isCompleting={completeSessionMutation.isPending}
+          deltaInfo={latestDelta}
           onNextOrFinish={handleNextOrFinish}
           onRetryEval={handleRetryEval}
           onContinueAnyway={handleNextOrFinish}
@@ -753,9 +843,9 @@ export const InterviewPage: React.FC = () => {
 
       {/* Answer Input Section (Hidden when feedback is visible) */}
       {session.interview_mode !== 'video' && !justEvaluatedFeedback && !isSubmitting && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-[#0d071a] p-6 rounded-2xl border border-purple-200 dark:border-purple-900/60 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <label htmlFor="answer-input" className="text-sm font-bold text-slate-800">
+            <label htmlFor="answer-input" className="text-sm font-bold text-slate-800 dark:text-purple-200">
               Your Answer
             </label>
 
@@ -768,7 +858,7 @@ export const InterviewPage: React.FC = () => {
                   className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition ${
                     isListening
                       ? 'bg-rose-600 text-white animate-pulse ring-2 ring-rose-400'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      : 'bg-purple-100 hover:bg-purple-200 text-purple-800 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900'
                   }`}
                   data-testid="voice-toggle-button"
                 >
@@ -779,14 +869,14 @@ export const InterviewPage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Mic className="mr-1.5 h-3.5 w-3.5 text-blue-600" />
+                      <Mic className="mr-1.5 h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                       Voice Answer
                     </>
                   )}
                 </button>
               ) : (
                 <span
-                  className="text-[11px] text-slate-400 italic"
+                  className="text-[11px] text-slate-400 dark:text-purple-400/60 italic"
                   title="Voice works in Chrome/Edge; you can type instead"
                 >
                   Voice works in Chrome/Edge; you can type instead
@@ -805,14 +895,14 @@ export const InterviewPage: React.FC = () => {
               onKeyDown={handleKeyDown}
               disabled={countdown.isExpired || isSubmitting}
               placeholder="Type your response here... (Press Ctrl+Enter to submit)"
-              className="w-full min-h-[140px] p-4 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-400 text-sm leading-relaxed resize-none transition disabled:bg-slate-50 disabled:text-slate-400"
+              className="w-full min-h-[140px] p-4 rounded-xl border border-slate-200 dark:border-purple-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/50 outline-none text-slate-900 dark:text-purple-100 placeholder:text-slate-400 dark:placeholder:text-purple-400/40 text-sm leading-relaxed resize-none transition bg-white dark:bg-[#140b27] disabled:bg-slate-50 disabled:text-slate-400"
               maxLength={4000}
               data-testid="answer-textarea"
             />
 
             {/* Interim Transcript Live Overlay */}
             {isListening && interimTranscript && (
-              <div className="mt-1 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 italic animate-pulse">
+              <div className="mt-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-xs text-purple-800 dark:text-purple-300 italic animate-pulse">
                 Speaking: "{interimTranscript}"
               </div>
             )}
@@ -824,7 +914,7 @@ export const InterviewPage: React.FC = () => {
           {/* Network Error Alert */}
           {networkError && (
             <div
-              className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-900 text-xs flex items-center justify-between"
+              className="p-3.5 rounded-xl bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-900/60 text-red-900 dark:text-rose-200 text-xs flex items-center justify-between"
               data-testid="network-error-banner"
             >
               <div className="flex items-center space-x-2">
@@ -843,15 +933,15 @@ export const InterviewPage: React.FC = () => {
 
           {/* Bottom Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <span className="text-xs text-slate-400 hidden sm:inline">
-              Tip: Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 border text-slate-600 font-mono">Ctrl+Enter</kbd> to submit
+            <span className="text-xs text-slate-400 dark:text-purple-400/60 hidden sm:inline font-mono">
+              Tip: Press <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-purple-950 border dark:border-purple-800 text-slate-600 dark:text-purple-300 font-mono">Ctrl+Enter</kbd> to submit
             </span>
 
             <button
               type="button"
               onClick={() => handleSubmitAnswer(false)}
               disabled={isSubmitting || answerText.trim().length === 0}
-              className="inline-flex items-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+              className="inline-flex items-center px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 hover:from-purple-600 hover:to-indigo-500 text-white font-bold text-sm shadow-[0_0_15px_rgba(147,51,234,0.4)] transition disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
               data-testid="submit-answer-button"
             >
               <Send className="mr-2 h-4 w-4" />

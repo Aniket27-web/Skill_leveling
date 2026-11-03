@@ -16,6 +16,7 @@ class AnswerResponse(BaseModel):
     improvements: List[str] = Field(default_factory=list)
     missed_points: List[str] = Field(default_factory=list)
     ideal_outline: List[str] = Field(default_factory=list)
+    interviewer_response: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

@@ -1,15 +1,16 @@
 import os
 import httpx
+from app.core.config import settings
 from .base import BaseLLMProvider
 
 
 class OpenAIProvider(BaseLLMProvider):
     def __init__(self, api_key: str | None = None, model: str | None = None, base_url: str | None = None):
-        self.api_key = api_key or os.getenv("LLM_API_KEY", "")
-        configured_model = (model or os.getenv("LLM_MODEL", "")).strip()
+        self.api_key = api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY)
+        configured_model = (model or os.getenv("LLM_MODEL", settings.LLM_MODEL)).strip()
         legacy_models = {"gpt-4o-mini": "gpt-5.5", "gpt-4o": "gpt-5.5"}
         self.model = legacy_models.get(configured_model, configured_model or "gpt-5.5")
-        self.base_url = (base_url or "https://api.openai.com/v1").rstrip("/")
+        self.base_url = (base_url or os.getenv("LLM_BASE_URL", settings.LLM_BASE_URL) or "https://api.openai.com/v1").rstrip("/")
 
     def generate(
         self,
