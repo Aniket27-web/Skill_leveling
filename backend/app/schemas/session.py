@@ -9,6 +9,10 @@ class CreateSessionRequest(BaseModel):
     num_questions: int = Field(..., ge=3, le=15)
     target_role: Optional[str] = Field(default=None, max_length=100)
     timer_seconds: Optional[int] = Field(default=None, ge=15, le=600)
+    interview_mode: Literal["text", "audio", "video"] = "text"
+    interview_category: Literal["technical", "hr", "behavioral", "mixed"] = "mixed"
+    experience_level: Literal["fresher", "junior", "mid", "senior", "lead"] = "fresher"
+    duration_minutes: Optional[int] = Field(default=None, ge=5, le=120)
 
 
 class CreateSessionResponse(BaseModel):
@@ -45,11 +49,16 @@ class QuestionInDetailResponse(BaseModel):
 
 class SessionDetailResponse(BaseModel):
     id: str
+    created_at: datetime
     status: Literal["in_progress", "completed"]
     difficulty: str
     num_questions: int
     target_role: Optional[str] = None
     timer_seconds: Optional[int] = None
+    interview_mode: Literal["text", "audio", "video"] = "text"
+    interview_category: Literal["technical", "hr", "behavioral", "mixed"] = "mixed"
+    experience_level: Literal["fresher", "junior", "mid", "senior", "lead"] = "fresher"
+    duration_minutes: Optional[int] = None
     answered_count: int
     current_question: Optional[CurrentQuestionResponse] = None
     questions: List[QuestionInDetailResponse] = Field(default_factory=list)

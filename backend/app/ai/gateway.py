@@ -80,9 +80,13 @@ def structured(
     temperature: float = 0.7,
     timeout: float = 30.0,
     provider: BaseLLMProvider | None = None,
+    provider_name: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
 ) -> T:
     """Execute LLM call with retry, backoff, parsing, repair retry, and structured logging."""
-    llm = provider or get_provider()
+    llm = provider or get_provider(provider_name, api_key, model, base_url)
     provider_name = llm.__class__.__name__
     model_name = getattr(llm, "model", getattr(llm, "mode", "default"))
 
@@ -119,11 +123,20 @@ def structured(
             _log_structured_call(task, provider_name, model_name, latency_ms, status_label)
 
             last_exception = exc
+            if not getattr(exc, "retryable", True):
+                raise AIUnavailableError(f"LLM call failed: {exc}") from exc
             if attempt < max_retries and (is_rate_limit or is_server_error or is_timeout):
                 # Check for Retry-After
                 retry_after_match = re.search(r"retry-after:\s*(\d+)", err_msg)
                 if retry_after_match:
                     sleep_sec = float(retry_after_match.group(1))
+                    if is_rate_limit and sleep_sec > 10:
+                        raise AIUnavailableError(
+                            f"Provider rate limit requires waiting {int(sleep_sec)} seconds before retrying. {exc}"
+                        ) from exc
+                elif is_rate_limit:
+                    # Rate limits commonly need a longer pause than transient 5xx errors.
+                    sleep_sec = (2 ** attempt) * 2 + random.uniform(0.1, 0.4)
                 else:
                     sleep_sec = (2 ** attempt) * 0.5 + random.uniform(0.1, 0.4)
                 time.sleep(sleep_sec)

@@ -1,12 +1,14 @@
 import io
+from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from app.ai import ResumeError
 
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+
 
 def test_upload_resume_pdf_success(client: TestClient, auth_headers_a: dict):
-    # Valid minimal PDF magic bytes
-    pdf_bytes = b"%PDF-1.4\n1 0 obj <<>> endobj\ntrailer <<>> %%EOF"
+    pdf_bytes = (FIXTURES_DIR / "sample_resume.pdf").read_bytes()
     files = {"file": ("my_resume.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
 
     resp = client.post("/api/resumes", headers=auth_headers_a, files=files)
@@ -20,8 +22,7 @@ def test_upload_resume_pdf_success(client: TestClient, auth_headers_a: dict):
 
 
 def test_upload_resume_docx_success(client: TestClient, auth_headers_a: dict):
-    # Valid minimal DOCX PK signature
-    docx_bytes = b"PK\x03\x04" + b"\x00" * 20
+    docx_bytes = (FIXTURES_DIR / "sample_resume.docx").read_bytes()
     files = {"file": ("resume.docx", io.BytesIO(docx_bytes), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")}
 
     resp = client.post("/api/resumes", headers=auth_headers_a, files=files)
@@ -69,7 +70,7 @@ def test_upload_resume_ai_error(client: TestClient, auth_headers_a: dict, monkey
 
     monkeypatch.setattr(r_mod, "extract_resume_text", fake_extract)
 
-    pdf_bytes = b"%PDF-1.4\nvalid header"
+    pdf_bytes = (FIXTURES_DIR / "sample_resume.pdf").read_bytes()
     files = {"file": ("valid.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
 
     resp = client.post("/api/resumes", headers=auth_headers_a, files=files)
@@ -81,7 +82,7 @@ def test_upload_resume_ai_error(client: TestClient, auth_headers_a: dict, monkey
 def test_list_resumes_scoped_to_user(
     client: TestClient, auth_headers_a: dict, auth_headers_b: dict
 ):
-    pdf_bytes = b"%PDF-1.4\nvalid header"
+    pdf_bytes = (FIXTURES_DIR / "sample_resume.pdf").read_bytes()
     files_a = {"file": ("user_a_resume.pdf", io.BytesIO(pdf_bytes), "application/pdf")}
     client.post("/api/resumes", headers=auth_headers_a, files=files_a)
 
@@ -94,4 +95,3 @@ def test_list_resumes_scoped_to_user(
     resumes_a = resp_a.json()
     assert all("user_b" not in r["filename"] for r in resumes_a)
     assert any("user_a" in r["filename"] for r in resumes_a)
-

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, JSON
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -12,6 +12,7 @@ class Resume(Base):
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     filename = Column(String(255), nullable=False)
     extracted_text = Column(Text, nullable=False)
+    profile = Column(JSON, nullable=True)
     sha256 = Column(String(64), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 

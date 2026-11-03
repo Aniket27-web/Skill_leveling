@@ -23,6 +23,10 @@ def evaluate_answer(
     answer_text: str,
     difficulty: str,
     resume_text: str | None = None,
+    provider_name: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
 ) -> Evaluation:
     """Evaluate candidate answer across 4 dimensions and provide structured feedback."""
     template = _load_prompt("evaluate_v1.md")
@@ -45,6 +49,10 @@ def evaluate_answer(
         messages=messages,
         prompt_version="evaluate_v1",
         temperature=0.2,
+        provider_name=provider_name,
+        api_key=api_key,
+        model=model,
+        base_url=base_url,
     )
 
     # Post-checks: ensure non-empty strengths and improvements

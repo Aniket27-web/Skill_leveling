@@ -1,226 +1,178 @@
 {
-  "id": "demo-session-uuid",
+  "id": "sess-4a8b-9c2d-8812",
   "status": "completed",
   "difficulty": "medium",
-  "num_questions": 3,
-  "target_role": "Backend Engineer",
+  "num_questions": 5,
+  "target_role": "Senior Full-Stack Engineer",
   "timer_seconds": 120,
-  "answered_count": 3,
-  "overall_score": 8.0,
-  "created_at": "2026-11-01T10:00:00Z",
-  "completed_at": "2026-11-01T10:15:00Z",
+  "answered_count": 5,
+  "current_question": null,
+  "overall_score": 8.2,
   "summary": {
-    "text": "Strong engineering fundamentals with clear communication.",
+    "text": "Strong technical and architectural foundation. Candidate clearly explained trade-offs in distributed caching and database migrations. Communication was concise and structured, with minor room for improvement in discussing production incident recovery and edge-case testing.",
     "top_strengths": [
-      "Clear communication",
-      "Solid architecture knowledge"
+      "In-depth grasp of zero-downtime database schema migrations",
+      "Structured architectural thinking and trade-off analysis",
+      "Clear, structured communication with quantifiable impacts"
     ],
     "focus_areas": [
-      "Deeper discussion on distributed locking"
+      "Deepen rollback and automated recovery runbooks in distributed architectures",
+      "Elaborate more proactively on security and authorization edge cases"
     ]
   },
-  "current_question": null,
+  "created_at": "2026-11-01T16:00:00Z",
   "questions": [
     {
-      "id": "q1-uuid",
-      "order_index": 0,
-      "text": "Explain database indexing in PostgreSQL.",
-      "category": "skill",
-      "answer_text": "B-Tree indexes speed up lookups by maintaining a balanced tree structure.",
+      "id": "q-101",
+      "order_index": 1,
+      "text": "How do you handle schema migrations in a high-traffic production PostgreSQL database without downtime?",
+      "category": "experience",
+      "answer_text": "We adopt the expand/contract pattern. In phase 1, we add new columns or tables as nullable or with safe defaults without dropping anything. The application code is deployed to dual-write or read from the new structure. In phase 2, we backfill existing data asynchronously via batch workers so we don't hold table locks. In phase 3, we update application code to use the new columns exclusively. Finally, in phase 4, after verifying stability, we drop the deprecated columns in a separate release.",
       "eval_status": "done",
-      "score": 8,
+      "score": 9,
+      "dimensions": {
+        "relevance": 10,
+        "accuracy": 9,
+        "depth": 9,
+        "clarity": 9
+      },
       "strengths": [
-        "Concise and accurate"
+        "Clearly laid out the 4-phase expand/contract migration pattern",
+        "Highlighting avoiding lock contention and async batch backfilling showed deep production experience"
       ],
       "improvements": [
-        "Mention composite indexes"
+        "Could mention Postgres-specific lock timeouts (lock_timeout) to prevent queue pileups"
       ],
       "missed_points": [
-        "Index maintenance costs"
+        "Setting lock_timeout explicitly before running DDL statements"
       ],
-      "dimensions": {
-        "relevance": 8,
-        "id": "sess-4a8b-9c2d-8812",
-        "status": "completed",
-        "difficulty": "medium",
-        "num_questions": 5,
-        "target_role": "Senior Full-Stack Engineer",
-        "timer_seconds": 120,
-        "answered_count": 5,
-        "current_question": null,
-        "overall_score": 8.2,
-        "summary": {
-          "text": "Strong technical and architectural foundation. Candidate clearly explained trade-offs in distributed caching and database migrations. Communication was concise and structured, with minor room for improvement in discussing production incident recovery and edge-case testing.",
-          "top_strengths": [
-            "In-depth grasp of zero-downtime database schema migrations",
-            "Structured architectural thinking and trade-off analysis",
-            "Clear, structured communication with quantifiable impacts"
-          ],
-          "focus_areas": [
-            "Deepen rollback and automated recovery runbooks in distributed architectures",
-            "Elaborate more proactively on security and authorization edge cases"
-          ]
-        },
-        "created_at": "2026-11-01T16:00:00Z",
-        "questions": [
-          {
-            "id": "q-101",
-            "order_index": 1,
-            "text": "How do you handle schema migrations in a high-traffic production PostgreSQL database without downtime?",
-            "category": "experience",
-            "answer_text": "We adopt the expand/contract pattern. In phase 1, we add new columns or tables as nullable or with safe defaults without dropping anything. The application code is deployed to dual-write or read from the new structure. In phase 2, we backfill existing data asynchronously via batch workers so we don't hold table locks. In phase 3, we update application code to use the new columns exclusively. Finally, in phase 4, after verifying stability, we drop the deprecated columns in a separate release.",
-            "eval_status": "done",
-            "score": 9,
-            "dimensions": {
-              "relevance": 10,
-              "accuracy": 9,
-              "depth": 9,
-              "clarity": 9
-            },
-            "strengths": [
-              "Clearly laid out the 4-phase expand/contract migration pattern",
-              "Highlighting avoiding lock contention and async batch backfilling showed deep production experience"
-            ],
-            "improvements": [
-              "Could mention Postgres-specific lock timeouts (lock_timeout) to prevent queue pileups"
-            ],
-            "missed_points": [
-              "Setting lock_timeout explicitly before running DDL statements"
-            ],
-            "ideal_outline": [
-              "1. Mention lock hazards and statement/lock timeouts",
-              "2. Detail expand and contract (parallel schema phases)",
-              "3. Explain background backfilling without table locks",
-              "4. Deprecation cleanup cycle"
-            ]
-          },
-          {
-            "id": "q-102",
-            "order_index": 2,
-            "text": "Explain how you would architect a cache invalidation strategy for user profiles in a multi-region deployment.",
-            "category": "skill",
-            "answer_text": "I would use Redis with a cache-aside pattern. For multi-region consistency, we rely on event-driven invalidation using Kafka or Redis Pub/Sub topics. When a user updates their profile in Region A, the primary DB commits the change and an outbox event is published. A consumer service invalidates or updates local Redis nodes across Region B and C. We also set a defensive TTL (e.g., 1 hour) on all profile keys to guard against missed events.",
-            "eval_status": "done",
-            "score": 8,
-            "dimensions": {
-              "relevance": 9,
-              "accuracy": 8,
-              "depth": 8,
-              "clarity": 8
-            },
-<<<<<<< HEAD
       "ideal_outline": [
-              "Index types",
-              "Tree structure",
-              "Trade-offs"
-            ]
-=======
+        "1. Mention lock hazards and statement/lock timeouts",
+        "2. Detail expand and contract (parallel schema phases)",
+        "3. Explain background backfilling without table locks",
+        "4. Deprecation cleanup cycle"
+      ]
+    },
+    {
+      "id": "q-102",
+      "order_index": 2,
+      "text": "Explain how you would architect a cache invalidation strategy for user profiles in a multi-region deployment.",
+      "category": "skill",
+      "answer_text": "I would use Redis with a cache-aside pattern. For multi-region consistency, we rely on event-driven invalidation using Kafka or Redis Pub/Sub topics. When a user updates their profile in Region A, the primary DB commits the change and an outbox event is published. A consumer service invalidates or updates local Redis nodes across Region B and C. We also set a defensive TTL (e.g., 1 hour) on all profile keys to guard against missed events.",
+      "eval_status": "done",
+      "score": 8,
+      "dimensions": {
+        "relevance": 9,
+        "accuracy": 8,
+        "depth": 8,
+        "clarity": 8
+      },
       "strengths": [
-              "Sensible use of the Transactional Outbox pattern with event-driven invalidation",
-              "Defensive TTL recommendation to mitigate permanent staleness"
-            ],
-            "improvements": [
-              "Explain handling race conditions where a stale read from a replica re-populates the cache before invalidation"
-            ],
-            "missed_points": [
-              "Cache stampede prevention (mutex locks or probabilistic early expiration)"
-            ],
-            "ideal_outline": [
-              "1. Cache-aside vs write-through baseline",
-              "2. Cross-region CDC or outbox pattern with Kafka/PubSub",
-              "3. Race condition handling (version vectors or timestamps in cache)",
-              "4. TTLs and stampede defense"
-            ]
-          },
-          {
-            "id": "q-103",
-            "order_index": 3,
-            "text": "Walk me through a project where you diagnosed and fixed a severe performance bottleneck.",
-            "category": "project",
-            "answer_text": "In our core payment reconciliation microservice, p99 latencies jumped to 4.2 seconds during peak sale hours. Using distributed tracing with OpenTelemetry and APM flame graphs, I discovered an N+1 query problem triggered when verifying merchant discount tiers inside a tight loop. I refactored the query to batch-load discount tiers in a single SQL query using JOINs and indexed the merchant_tier_id column. This reduced our p99 latency from 4.2s to 180ms.",
-            "eval_status": "done",
-            "score": 9,
-            "dimensions": {
-              "relevance": 10,
-              "accuracy": 9,
-              "depth": 9,
-              "clarity": 9
-            },
-            "strengths": [
-              "Specific metrics given (4.2s down to 180ms)",
-              "Correct use of APM and distributed tracing tools to isolate root cause"
-            ],
-            "improvements": [
-              "Could mention adding automated regression tests or lint rules to catch future N+1 queries"
-            ],
-            "missed_points": [],
-            "ideal_outline": [
-              "1. Problem context, metrics, and business impact",
-              "2. Diagnostic tooling and root-cause analysis",
-              "3. Resolution and code/schema changes",
-              "4. Quantified outcome and regression prevention"
-            ]
-          },
-          {
-            "id": "q-104",
-            "order_index": 4,
-            "text": "Describe a situation where you had a major disagreement with a tech lead or product manager. How did you resolve it?",
-            "category": "behavioral",
-            "answer_text": "Our product manager wanted to ship a feature quickly by skipping database foreign keys and optimistic concurrency locks. I was concerned about financial data corruption. Instead of saying no, I scheduled a 30-minute sync where I mapped out the risk scenario with simulated concurrent transactions. We agreed on a compromise: we implemented row versioning with optimistic locking first, and deferred the complex auditing UI to the next sprint, meeting the launch deadline safely.",
-            "eval_status": "done",
-            "score": 8,
-            "dimensions": {
-              "relevance": 9,
-              "accuracy": 8,
-              "depth": 8,
-              "clarity": 8
-            },
-            "strengths": [
-              "Showed collaborative empathy and proposed a constructive compromise",
-              "Used empirical risk demonstration rather than emotional argumentation"
-            ],
-            "improvements": [
-              "Could follow up with how the retrospective after launch confirmed the decision"
-            ],
-            "missed_points": [],
-            "ideal_outline": [
-              "1. Context of disagreement and differing priorities",
-              "2. Objective evaluation of technical vs timeline risks",
-              "3. Collaborative resolution and compromise",
-              "4. Positive business outcome and lessons learned"
-            ]
-          },
-          {
-            "id": "q-105",
-            "order_index": 5,
-            "text": "How do you secure JWT authentication tokens in a single-page application communicating with an API?",
-            "category": "skill",
-            "answer_text": "Store the JWT in an httpOnly, SameSite=Lax (or Strict) Secure cookie rather than localStorage to protect against XSS token exfiltration. Protect against CSRF by either using custom request headers (like X-Requested-With) which browsers prevent from cross-origin form submissions, or standard anti-CSRF double-submit cookies. Keep token expiration short (e.g. 15 minutes) with rotating refresh tokens.",
-            "eval_status": "done",
-            "score": 7,
-            "dimensions": {
-              "relevance": 9,
-              "accuracy": 8,
-              "depth": 6,
-              "clarity": 7
-            },
-            "strengths": [
-              "Accurately identified httpOnly and SameSite cookie protection against XSS exfiltration"
-            ],
-            "improvements": [
-              "Could expand on refresh token rotation mechanics and revocation lists"
-            ],
-            "missed_points": [
-              "Refresh token reuse detection",
-              "Revocation storage strategies"
-            ],
-            "ideal_outline": [
-              "1. httpOnly + SameSite cookies vs localStorage trade-offs",
-              "2. CSRF defenses for cookie-based auth",
-              "3. Short-lived access token + rotating refresh token architecture",
-              "4. Revocation lists and security incident response"
-            ]
->>>>>>> origin/feat/p4-interview
-          }
-        ]
-      }
+        "Sensible use of the Transactional Outbox pattern with event-driven invalidation",
+        "Defensive TTL recommendation to mitigate permanent staleness"
+      ],
+      "improvements": [
+        "Explain handling race conditions where a stale read from a replica re-populates the cache before invalidation"
+      ],
+      "missed_points": [
+        "Cache stampede prevention (mutex locks or probabilistic early expiration)"
+      ],
+      "ideal_outline": [
+        "1. Cache-aside vs write-through baseline",
+        "2. Cross-region CDC or outbox pattern with Kafka/PubSub",
+        "3. Race condition handling (version vectors or timestamps in cache)",
+        "4. TTLs and stampede defense"
+      ]
+    },
+    {
+      "id": "q-103",
+      "order_index": 3,
+      "text": "Walk me through a project where you diagnosed and fixed a severe performance bottleneck.",
+      "category": "project",
+      "answer_text": "In our core payment reconciliation microservice, p99 latencies jumped to 4.2 seconds during peak sale hours. Using distributed tracing with OpenTelemetry and APM flame graphs, I discovered an N+1 query problem triggered when verifying merchant discount tiers inside a tight loop. I refactored the query to batch-load discount tiers in a single SQL query using JOINs and indexed the merchant_tier_id column. This reduced our p99 latency from 4.2s to 180ms.",
+      "eval_status": "done",
+      "score": 9,
+      "dimensions": {
+        "relevance": 10,
+        "accuracy": 9,
+        "depth": 9,
+        "clarity": 9
+      },
+      "strengths": [
+        "Specific metrics given (4.2s down to 180ms)",
+        "Correct use of APM and distributed tracing tools to isolate root cause"
+      ],
+      "improvements": [
+        "Could mention adding automated regression tests or lint rules to catch future N+1 queries"
+      ],
+      "missed_points": [],
+      "ideal_outline": [
+        "1. Problem context, metrics, and business impact",
+        "2. Diagnostic tooling and root-cause analysis",
+        "3. Resolution and code/schema changes",
+        "4. Quantified outcome and regression prevention"
+      ]
+    },
+    {
+      "id": "q-104",
+      "order_index": 4,
+      "text": "Describe a situation where you had a major disagreement with a tech lead or product manager. How did you resolve it?",
+      "category": "behavioral",
+      "answer_text": "Our product manager wanted to ship a feature quickly by skipping database foreign keys and optimistic concurrency locks. I was concerned about financial data corruption. Instead of saying no, I scheduled a 30-minute sync where I mapped out the risk scenario with simulated concurrent transactions. We agreed on a compromise: we implemented row versioning with optimistic locking first, and deferred the complex auditing UI to the next sprint, meeting the launch deadline safely.",
+      "eval_status": "done",
+      "score": 8,
+      "dimensions": {
+        "relevance": 9,
+        "accuracy": 8,
+        "depth": 8,
+        "clarity": 8
+      },
+      "strengths": [
+        "Showed collaborative empathy and proposed a constructive compromise",
+        "Used empirical risk demonstration rather than emotional argumentation"
+      ],
+      "improvements": [
+        "Could follow up with how the retrospective after launch confirmed the decision"
+      ],
+      "missed_points": [],
+      "ideal_outline": [
+        "1. Context of disagreement and differing priorities",
+        "2. Objective evaluation of technical vs timeline risks",
+        "3. Collaborative resolution and compromise",
+        "4. Positive business outcome and lessons learned"
+      ]
+    },
+    {
+      "id": "q-105",
+      "order_index": 5,
+      "text": "How do you secure JWT authentication tokens in a single-page application communicating with an API?",
+      "category": "skill",
+      "answer_text": "Store the JWT in an httpOnly, SameSite=Lax (or Strict) Secure cookie rather than localStorage to protect against XSS token exfiltration. Protect against CSRF by either using custom request headers (like X-Requested-With) which browsers prevent from cross-origin form submissions, or standard anti-CSRF double-submit cookies. Keep token expiration short (e.g. 15 minutes) with rotating refresh tokens.",
+      "eval_status": "done",
+      "score": 7,
+      "dimensions": {
+        "relevance": 9,
+        "accuracy": 8,
+        "depth": 6,
+        "clarity": 7
+      },
+      "strengths": [
+        "Accurately identified httpOnly and SameSite cookie protection against XSS exfiltration"
+      ],
+      "improvements": [
+        "Could expand on refresh token rotation mechanics and revocation lists"
+      ],
+      "missed_points": [
+        "Refresh token reuse detection",
+        "Revocation storage strategies"
+      ],
+      "ideal_outline": [
+        "1. httpOnly + SameSite cookies vs localStorage trade-offs",
+        "2. CSRF defenses for cookie-based auth",
+        "3. Short-lived access token + rotating refresh token architecture",
+        "4. Revocation lists and security incident response"
+      ]
+    }
+  ]
+}
+

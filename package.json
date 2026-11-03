@@ -1,0 +1,20 @@
+{
+  "name": "ai-mock-interview-coach",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Mock Interview Coach - Root Orchestrator for Backend and Frontend",
+  "scripts": {
+    "start": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",
+    "backend": "python -m uvicorn app.main:app --app-dir backend --reload --port 8000",
+    "frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "python -m pytest backend",
+    "test:frontend": "npm run test --prefix frontend -- --run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
+

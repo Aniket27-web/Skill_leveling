@@ -11,6 +11,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@pixiv/three-vrm": "^3.5.5",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
     "@tanstack/react-query": "^5.28.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.359.0",
@@ -18,7 +21,8 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3",
     "recharts": "^2.12.3",
-    "tailwind-merge": "^2.2.2"
+    "tailwind-merge": "^2.2.2",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
@@ -37,4 +41,3 @@
     "vitest": "^1.4.0"
   }
 }
-

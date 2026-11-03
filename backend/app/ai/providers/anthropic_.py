@@ -6,7 +6,16 @@ from .base import BaseLLMProvider
 class AnthropicProvider(BaseLLMProvider):
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or os.getenv("LLM_API_KEY", "")
-        self.model = model or os.getenv("LLM_MODEL", "claude-3-5-sonnet-20241022")
+        configured_model = (model or os.getenv("LLM_MODEL", "")).strip()
+        legacy_models = {
+            "claude-3-5-sonnet-20241022": "claude-sonnet-5",
+            "claude-3-5-sonnet-20240620": "claude-sonnet-5",
+            "claude-3-7-sonnet-20250219": "claude-sonnet-5",
+            "claude-sonnet-4-20250514": "claude-sonnet-5",
+            "claude-3-5-haiku-20241022": "claude-haiku-4-5-20251001",
+            "claude-3-haiku-20240307": "claude-haiku-4-5-20251001",
+        }
+        self.model = legacy_models.get(configured_model, configured_model or "claude-sonnet-5")
 
     def generate(
         self,
@@ -38,7 +47,6 @@ class AnthropicProvider(BaseLLMProvider):
         payload = {
             "model": self.model,
             "max_tokens": 4096,
-            "temperature": temperature,
             "messages": claude_messages,
         }
         if system_prompt.strip():

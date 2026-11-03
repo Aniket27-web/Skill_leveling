@@ -19,6 +19,10 @@ def _load_prompt(filename: str) -> str:
 def summarize_session(
     items: list[dict],
     overall: float,
+    provider_name: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
 ) -> SessionSummary:
     """Summarize overall mock interview performance, strengths, and priority focus areas."""
     template = _load_prompt("summary_v1.md")
@@ -45,6 +49,10 @@ def summarize_session(
         messages=messages,
         prompt_version="summary_v1",
         temperature=0.3,
+        provider_name=provider_name,
+        api_key=api_key,
+        model=model,
+        base_url=base_url,
     )
 
     return summary

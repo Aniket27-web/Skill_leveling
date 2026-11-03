@@ -33,9 +33,9 @@ from app.ai import (
 ### Provider Selection (`LLM_PROVIDER`)
 Default: `fake`. Set via environment variable:
 - `LLM_PROVIDER=fake` (default; deterministic, zero network, zero cost)
-- `LLM_PROVIDER=anthropic` (`LLM_API_KEY`, `LLM_MODEL=claude-3-5-sonnet-20241022`)
-- `LLM_PROVIDER=openai` (`LLM_API_KEY`, `LLM_MODEL=gpt-4o-mini`)
-- `LLM_PROVIDER=gemini` (`LLM_API_KEY`, `LLM_MODEL=gemini-1.5-flash`)
+- `LLM_PROVIDER=anthropic` (`LLM_API_KEY`, `LLM_MODEL=claude-sonnet-5`; default when `LLM_MODEL` is blank)
+- `LLM_PROVIDER=openai` (`LLM_API_KEY`, `LLM_MODEL=gpt-5.5`; default when `LLM_MODEL` is blank)
+- `LLM_PROVIDER=gemini` (`LLM_API_KEY`, `LLM_MODEL=gemini-3.8-flash`; this is also the default when `LLM_MODEL` is blank)
 
 ### Fake Provider Fault Modes (`LLM_FAKE_MODE`)
 For integration and resilience testing:

@@ -17,4 +17,8 @@ class User(Base):
     # Relationships with CASCADE
     resumes = relationship("Resume", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+    ai_provider_config = relationship(
+        "AIProviderConfig", back_populates="user", uselist=False,
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
 

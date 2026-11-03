@@ -10,6 +10,7 @@ from app.ai import (
     summarize_session,
 )
 from app.core.database import get_db
+from app.core.crypto import decrypt_secret
 from app.core.deps import get_current_user, get_owned_session
 from app.core.errors import (
     BadGatewayException,
@@ -18,6 +19,7 @@ from app.core.errors import (
     NotFoundException,
 )
 from app.models.question import Question
+from app.models.ai_provider_config import AIProviderConfig
 from app.models.resume import Resume
 from app.models.session import Session as SessionModel
 from app.models.user import User
@@ -38,6 +40,20 @@ from app.services.scoring import compute_overall, compute_score
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
+def _request_ai_options(current_user: User, db: Session) -> dict[str, str]:
+    """Load and decrypt only the authenticated user's provider credentials."""
+    config = db.query(AIProviderConfig).filter(AIProviderConfig.user_id == current_user.id).first()
+    if not config:
+        return {}
+    options = {
+        "provider_name": config.provider,
+        "api_key": decrypt_secret(config.encrypted_api_key),
+        "model": config.model,
+    }
+    if config.base_url:
+        options["base_url"] = config.base_url
+    return options
+
 
 @router.post(
     "",
@@ -57,6 +73,7 @@ def create_session(
     )
     if not resume:
         raise NotFoundException("Resume not found", code="not_found")
+    ai_options = _request_ai_options(current_user, db)
 
     # Generate questions via AI
     try:
@@ -65,6 +82,9 @@ def create_session(
             difficulty=data.difficulty,
             n=data.num_questions,
             target_role=data.target_role,
+            interview_category=data.interview_category,
+            experience_level=data.experience_level,
+            **ai_options,
         )
     except (AIUnavailableError, AIInvalidResponseError) as ae:
         raise BadGatewayException(message=str(ae), code="ai_unavailable")
@@ -79,6 +99,10 @@ def create_session(
         num_questions=data.num_questions,
         target_role=data.target_role,
         timer_seconds=data.timer_seconds,
+        interview_mode=data.interview_mode,
+        interview_category=data.interview_category,
+        experience_level=data.experience_level,
+        duration_minutes=data.duration_minutes,
         status="in_progress",
     )
     db.add(session)
@@ -212,11 +236,16 @@ def get_session(
 
     return SessionDetailResponse(
         id=session.id,
+        created_at=session.created_at,
         status=session.status,  # type: ignore[arg-type]
         difficulty=session.difficulty,
         num_questions=session.num_questions,
         target_role=session.target_role,
         timer_seconds=session.timer_seconds,
+        interview_mode=session.interview_mode or "text",
+        interview_category=session.interview_category or "mixed",
+        experience_level=session.experience_level or "fresher",
+        duration_minutes=session.duration_minutes,
         answered_count=answered_count,
         current_question=current_q_obj,
         questions=q_details,
@@ -236,6 +265,7 @@ def answer_question(
     db: Session = Depends(get_db),
 ) -> AnswerResponse:
     session = get_owned_session(id, db, current_user)
+    ai_options = _request_ai_options(current_user, db)
     question = (
         db.query(Question)
         .filter(Question.id == qid, Question.session_id == session.id)
@@ -346,10 +376,12 @@ def answer_question(
             answer_text=data.answer_text,
             difficulty=session.difficulty,
             resume_text=resume_text,
+            **ai_options,
         )
-        score = compute_score(evaluation.dimensions)
+        dims = evaluation.dimensions.model_dump() if hasattr(evaluation.dimensions, 'model_dump') else evaluation.dimensions
+        score = compute_score(dims)
         question.score = score
-        question.dimensions = evaluation.dimensions
+        question.dimensions = dims
         question.strengths = evaluation.strengths or []
         question.improvements = evaluation.improvements or []
         question.missed_points = evaluation.missed_points or []
@@ -388,6 +420,7 @@ def retry_eval(
     db: Session = Depends(get_db),
 ) -> AnswerResponse:
     session = get_owned_session(id, db, current_user)
+    ai_options = _request_ai_options(current_user, db)
     question = (
         db.query(Question)
         .filter(Question.id == qid, Question.session_id == session.id)
@@ -410,10 +443,12 @@ def retry_eval(
             answer_text=question.answer_text or "",
             difficulty=session.difficulty,
             resume_text=resume_text,
+            **ai_options,
         )
-        score = compute_score(evaluation.dimensions)
+        dims = evaluation.dimensions.model_dump() if hasattr(evaluation.dimensions, 'model_dump') else evaluation.dimensions
+        score = compute_score(dims)
         question.score = score
-        question.dimensions = evaluation.dimensions
+        question.dimensions = dims
         question.strengths = evaluation.strengths or []
         question.improvements = evaluation.improvements or []
         question.missed_points = evaluation.missed_points or []
@@ -448,6 +483,7 @@ def complete_session(
     db: Session = Depends(get_db),
 ) -> CompleteSessionResponse:
     session = get_owned_session(id, db, current_user)
+    ai_options = _request_ai_options(current_user, db)
 
     # Idempotent: already completed returns stored result
     if session.status == "completed" and session.overall_score is not None:
@@ -478,7 +514,7 @@ def complete_session(
     ]
 
     try:
-        summary_res = summarize_session(items=items, overall=overall)
+        summary_res = summarize_session(items=items, overall=overall, **ai_options)
         summary_dict = {
             "text": summary_res.text,
             "top_strengths": summary_res.top_strengths or [],

@@ -2,6 +2,22 @@
 
 An AI-driven mock interview coach designed to conduct technical interviews, evaluate user responses across multiple dimensions, provide granular feedback, and track candidate progression over time.
 
+## Product Features
+
+- **Accounts:** Register, sign in, and keep each user's resumes and sessions private.
+- **Resume-based practice:** Upload a PDF or DOCX resume. The app extracts its text and uses it to ground interview questions.
+- **Session setup:** Pick difficulty, interview category, experience level, 3–15 questions, a target role, a per-question timer, and a total interview duration.
+- **Interview formats:** Practice in text chat, audio call, or video call mode. Audio/video modes read questions aloud with the browser's speech synthesis. Video mode offers a local camera preview; it does not record or transmit video.
+- **Voice answers:** Use browser speech recognition to transcribe answers. Typed answers remain available in every format.
+- **Interviewer avatar:** Audio and video rooms show an animated 3D interviewer. It uses a built-in procedural avatar by default and can load a licensed VRM or GLB asset through `VITE_INTERVIEWER_MODEL_URL`.
+- **Live interview tools:** Timer, progress tracking, autosaved drafts, delivery statistics, and recovery when evaluation or network requests fail.
+- **AI feedback:** Scores are calculated by the server from relevance, accuracy, depth, and clarity dimensions. Each answer includes strengths, improvements, missed points, and an ideal answer outline.
+- **Session review:** See an overall score, AI summary, per-question feedback, and a downloadable PDF report.
+- **History and progress:** Resume in-progress sessions, delete past sessions, and follow score trends over time.
+- **AI provider settings:** A signed-in user can select OpenAI, Anthropic, Gemini, or an OpenAI-compatible endpoint, test the connection, and save a personal API key. The backend encrypts the key at rest and never returns it to the browser. Configure `CREDENTIAL_ENCRYPTION_KEY` in production and keep it stable so saved credentials remain decryptable. The app warns users when they start without personal provider settings and uses the server-configured provider (or its configured demo provider).
+
+Browser speech synthesis and speech recognition depend on browser support and microphone permissions. Audio mode uses browser speech for the interviewer and voice transcription for answers. Video mode provides a local camera preview alongside voice practice; it is not a live video call with a remote interviewer. The optional VRM/GLB asset URL must point to a browser-accessible model file.
+
 ---
 
 ## Run the Backend
@@ -23,6 +39,7 @@ Key environment configurations:
 - `ENVIRONMENT`: `development` | `production` | `test`
 - `CORS_ORIGINS`: Allowed origins (e.g. `http://localhost:5173`)
 - `SECRET_KEY`: Random 32+ character key for JWT token signing
+- `CREDENTIAL_ENCRYPTION_KEY`: Stable, strong secret used to encrypt account API keys at rest (required in production)
 - `DATABASE_URL`: Database connection string (`sqlite:///./interview_coach.db` by default)
 - `LLM_PROVIDER`: `fake` | `anthropic` | `openai` | `gemini` (default: `fake`)
 - `LLM_FAKE_MODE`: `ok` | `empty` | `malformed` | `timeout` | `rate_limit` | `out_of_range`

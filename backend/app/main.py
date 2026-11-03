@@ -7,6 +7,7 @@ from app.core.database import init_db
 from app.core.errors import register_exception_handlers
 from app.routers import (
     auth_router,
+    ai_settings_router,
     progress_router,
     resumes_router,
     sessions_router,
@@ -55,6 +56,7 @@ def api_healthz():
 
 # Mount API routers under /api
 app.include_router(auth_router, prefix="/api")
+app.include_router(ai_settings_router, prefix="/api")
 app.include_router(resumes_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")

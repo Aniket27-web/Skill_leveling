@@ -59,6 +59,12 @@ def generate_questions(
     difficulty: str,
     n: int,
     target_role: str | None = None,
+    provider_name: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+    base_url: str | None = None,
+    interview_category: str = "mixed",
+    experience_level: str = "fresher",
 ) -> list[GeneratedQuestion]:
     """Generate n grounded, calibrated interview questions based on resume."""
     if n < 1:
@@ -72,6 +78,8 @@ def generate_questions(
         template.replace("{n}", str(n))
         .replace("{difficulty}", difficulty)
         .replace("{target_role_info}", role_info)
+        .replace("{interview_category}", interview_category)
+        .replace("{experience_level}", experience_level)
         .replace("{resume_text}", safe_resume)
     )
 
@@ -82,6 +90,10 @@ def generate_questions(
         messages=messages,
         prompt_version="questions_v1",
         temperature=0.7,
+        provider_name=provider_name,
+        api_key=api_key,
+        model=model,
+        base_url=base_url,
     )
 
     valid_questions = _deduplicate_questions(resp.questions)
@@ -94,6 +106,7 @@ def generate_questions(
             f"Generate exactly {missing_count} additional unique questions based on the candidate's resume.\n"
             f"Do NOT duplicate or rephrase any of these already generated questions:\n{existing_summaries}\n\n"
             f"Difficulty: {difficulty}\n"
+            f"Interview category: {interview_category}\nExperience level: {experience_level}\n"
             f"Target Role: {role_info}\n"
             f"<resume>\n{safe_resume}\n</resume>"
         )
@@ -103,6 +116,10 @@ def generate_questions(
             messages=[{"role": "user", "content": regen_prompt}],
             prompt_version="questions_v1",
             temperature=0.7,
+            provider_name=provider_name,
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
         )
 
         for candidate_q in regen_resp.questions:

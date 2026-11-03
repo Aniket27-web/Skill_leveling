@@ -59,7 +59,7 @@ def login(
         value=token,
         httponly=True,
         samesite="lax",
-        secure=False,  # Set to True when using HTTPS in production
+        secure=settings.ENVIRONMENT.lower() == "production",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )

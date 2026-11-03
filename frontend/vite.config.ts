@@ -19,6 +19,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('/node_modules/three/')) return 'three-core';
+          if (id.includes('/node_modules/three-stdlib/')) return 'three-stdlib';
+          if (id.includes('/node_modules/@react-three/fiber/')) return 'react-three-fiber';
+          if (id.includes('/node_modules/@react-three/drei/')) return 'react-three-drei';
+          if (id.includes('/node_modules/@pixiv/three-vrm/')) return 'three-vrm';
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

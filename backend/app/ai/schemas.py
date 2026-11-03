@@ -33,7 +33,7 @@ class Evaluation(BaseModel):
     improvements: list[str] = Field(default_factory=list, description="1-3 key areas for improvement")
     missed_points: list[str] = Field(default_factory=list, description="Key concepts or points candidate missed")
     ideal_outline: list[str] = Field(default_factory=list, description="3-5 bullet points of an ideal response")
-    prompt_version: str = Field(..., description="Version of the evaluation prompt used")
+    prompt_version: str = Field(default="evaluate_v1", description="Version of the evaluation prompt used")
 
 
 class SessionSummary(BaseModel):

@@ -8,6 +8,15 @@ Generate exactly {n} unique interview questions based on the candidate's resume.
 
 Difficulty Level: {difficulty}
 Target Role: {target_role_info}
+Interview Category: {interview_category}
+Candidate Experience Level: {experience_level}
+
+Category requirements:
+- technical: focus on skills, tools, architecture, debugging, and technical decisions.
+- hr: focus on motivation, communication, collaboration, and workplace scenarios.
+- behavioral: focus on concrete past behavior and outcomes using STAR-style prompts.
+- mixed: balance technical, project, experience, and behavioral questions.
+Calibrate expected depth and terminology to the candidate's experience level.
 
 Difficulty Guidelines:
 - "easy": Focus on foundational concepts, definitions, and "what did you do" on specific projects or tools.

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
     SECRET_KEY: str = "super-secret-jwt-key-for-ai-mock-interview-coach-min-32-chars"
+    CREDENTIAL_ENCRYPTION_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     DATABASE_URL: str = "sqlite:///./interview_coach.db"

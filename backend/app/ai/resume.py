@@ -20,6 +20,49 @@ RESUME_KEYWORDS = [
     r"\btechnical background\b",
 ]
 
+PROFILE_SECTIONS = {
+    "skills": re.compile(r"^(technical\s+)?skills?(\s+and\s+tools)?$", re.I),
+    "projects": re.compile(r"^(selected\s+)?projects?(\s+and\s+portfolio)?$", re.I),
+    "education": re.compile(r"^(education|academics|qualifications)$", re.I),
+    "experience": re.compile(r"^(work\s+)?(experience|employment|work\s+history|professional\s+experience)$", re.I),
+}
+
+TECHNOLOGIES = [
+    "Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Go", "Rust", "Ruby", "PHP",
+    "React", "Angular", "Vue", "Node.js", "FastAPI", "Django", "Flask", "Spring", "Express",
+    "PostgreSQL", "MySQL", "SQLite", "MongoDB", "Redis", "Docker", "Kubernetes", "AWS", "Azure", "GCP",
+    "Git", "Linux", "TensorFlow", "PyTorch", "scikit-learn", "Pandas", "NumPy", "GraphQL", "REST",
+]
+
+
+def extract_resume_profile(text: str) -> dict[str, list[str]]:
+    """Extract a lightweight structured profile from recognized resume sections."""
+    sections: dict[str, list[str]] = {name: [] for name in PROFILE_SECTIONS}
+    current: str | None = None
+    for raw_line in text.splitlines():
+        line = raw_line.strip(" \t-•|")
+        if not line:
+            continue
+        header = re.sub(r"[:|]+$", "", line).strip()
+        matched = next((name for name, pattern in PROFILE_SECTIONS.items() if pattern.fullmatch(header)), None)
+        if matched:
+            current = matched
+            continue
+        if current:
+            sections[current].append(line[:400])
+
+    skill_items: list[str] = []
+    for line in sections["skills"]:
+        skill_items.extend(part.strip() for part in re.split(r"[,;|•]+", line) if part.strip())
+    technologies = [name for name in TECHNOLOGIES if re.search(rf"(?<![\w+#]){re.escape(name)}(?![\w+#])", text, re.I)]
+    return {
+        "skills": list(dict.fromkeys(skill_items))[:40],
+        "technologies": technologies[:40],
+        "projects": sections["projects"][:12],
+        "education": sections["education"][:12],
+        "experience": sections["experience"][:20],
+    }
+
 
 def redact_contact(text: str) -> str:
     """Redact emails and phone numbers from resume text before passing to LLM."""
