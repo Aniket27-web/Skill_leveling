@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   useSession,
   useSubmitAnswer,
@@ -61,6 +62,15 @@ export const InterviewPage: React.FC = () => {
     refetchInterval: isPreparingNext ? 2000 : false,
   });
 
+  const { data: meUser } = useQuery<{ id: string; name?: string; email?: string }>({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      return res.ok ? res.json() : null;
+    },
+  });
+  const candidateFirstName = meUser?.name ? meUser.name.trim().split(/\s+/)[0] : '';
+
   const submitAnswerMutation = useSubmitAnswer();
   const retryEvalMutation = useRetryEval();
   const completeSessionMutation = useCompleteSession();
@@ -100,6 +110,9 @@ export const InterviewPage: React.FC = () => {
   const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState('');
   const [interviewerResponse, setInterviewerResponse] = useState<string | null>(null);
+  const [spokenText, setSpokenText] = useState<string>('');
+  const [hasDeliveredIntro, setHasDeliveredIntro] = useState<boolean>(false);
+  const [isAudibleConfirmed, setIsAudibleConfirmed] = useState<boolean>(false);
   const [justEvaluatedFeedback, setJustEvaluatedFeedback] = useState<any | null>(null);
   const [latestDelta, setLatestDelta] = useState<LevelDeltaCalculation | null>(null);
 
@@ -209,6 +222,7 @@ export const InterviewPage: React.FC = () => {
   const speakText = (text: string, listenAfter: boolean = false) => {
     if (!text.trim() || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
+    setSpokenText(text);
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = speechVoices.find((item) => item.name === selectedVoiceName);
     if (voice) {
@@ -217,13 +231,15 @@ export const InterviewPage: React.FC = () => {
     } else {
       utterance.lang = 'en-US';
     }
-    utterance.rate = 0.92;
+    utterance.rate = 0.94;
     utterance.pitch = 1.0;
     utterance.onstart = () => setIsInterviewerSpeaking(true);
     utterance.onend = () => {
       setIsInterviewerSpeaking(false);
       setViseme('neutral');
-      if (listenAfter && session?.interview_mode === 'video' && hasJoinedVideoCall && microphoneEnabled) startListening();
+      if (listenAfter && (session?.interview_mode === 'video' || session?.interview_mode === 'audio')) {
+        startListening();
+      }
     };
     utterance.onerror = () => { setIsInterviewerSpeaking(false); setViseme('neutral'); };
     utterance.onboundary = (event) => {
@@ -366,12 +382,32 @@ export const InterviewPage: React.FC = () => {
     }
   }, [answerText, interimTranscript]);
 
-  const speakQuestion = () => {
+  const getTimeBasedGreeting = () => {
+    const hr = new Date().getHours();
+    if (hr < 12) return 'Good morning';
+    if (hr < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const speakQuestion = (forceFullIntro: boolean = false) => {
     if (!currentQ?.text || !('speechSynthesis' in window)) {
       setVoiceToast('Question audio is not supported by this browser.');
       return;
     }
-    speakText(currentQ.text, true);
+
+    const order = currentQ?.order_index ?? 1;
+    let spokenSentence = currentQ.text;
+
+    if ((order === 1 && !hasDeliveredIntro) || forceFullIntro) {
+      const greeting = getTimeBasedGreeting();
+      const namePart = candidateFirstName ? ` ${candidateFirstName}` : '';
+      spokenSentence = `Hello${namePart}! ${greeting}. Can you hear me clearly? Am I audible? I am your personal AI technical interviewer today. Welcome to your mock interview! We will walk through questions based on your background and projects. Take your time, think out loud, and answer naturally. Let's start with our first question: ${currentQ.text}`;
+      setHasDeliveredIntro(true);
+    } else if (order > 1) {
+      spokenSentence = `Thank you. Let's move on to question ${order}: ${currentQ.text}`;
+    }
+
+    speakText(spokenSentence, true);
   };
 
   useEffect(() => {
@@ -758,14 +794,57 @@ export const InterviewPage: React.FC = () => {
             <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center flex-shrink-0 font-bold text-sm font-mono border border-purple-200 dark:border-purple-800">Q{orderIndex}</div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-snug">{currentQ?.text || 'Formulating dungeon challenge prompt...'}</h1>
           </div>
-          {session.interview_mode !== 'text' && <button type="button" onClick={speakQuestion} aria-label="Read question aloud" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"><Volume2 className="h-4 w-4" /> Play question</button>}
+          {session.interview_mode !== 'text' && <button type="button" onClick={() => speakQuestion(false)} aria-label="Read question aloud" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"><Volume2 className="h-4 w-4" /> Play question</button>}
         </div>
       </div>}
 
-      {session.interview_mode === 'audio' && <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
+      {session.interview_mode === 'audio' && <section className="grid gap-4 rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-white dark:bg-[#0d071a] p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
         <div>
-          <div className="mb-3 flex items-start gap-3"><div className="rounded-xl bg-indigo-50 p-2.5 text-indigo-700"><PhoneCall className="h-5 w-5" /></div><div><p className="text-sm font-semibold text-slate-900">Audio interview practice</p><p className="mt-1 text-xs text-slate-500">The interviewer reads questions aloud. Use Voice Answer to respond; speech recognition transcribes your answer for AI feedback.</p></div></div>
-          <AudioWaveform active={isListening} />
+          <div className="mb-3 flex items-start gap-3">
+            <div className="rounded-xl bg-purple-100 dark:bg-purple-950 p-2.5 text-purple-700 dark:text-purple-300">
+              <PhoneCall className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                Live Audio Technical Interview
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Call
+                </span>
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-purple-300/70">
+                Your AI interviewer speaks the questions aloud. Use your voice to answer naturally.
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Audible Check Banner */}
+          {orderIndex === 1 && !isAudibleConfirmed && (
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-purple-300 bg-purple-50 px-3.5 py-2.5 text-xs text-purple-900 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-200">
+              <span className="font-medium">🎙️ Interviewer: "Can you hear me clearly? Am I audible?"</span>
+              <button
+                type="button"
+                onClick={() => setIsAudibleConfirmed(true)}
+                className="rounded-lg bg-purple-700 px-3 py-1 font-bold text-white hover:bg-purple-600 transition ml-2 shrink-0 shadow-sm"
+              >
+                Yes, audible! ✓
+              </button>
+            </div>
+          )}
+
+          {/* Interviewer Spoken Dialogue / Live Candidate Transcription */}
+          <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-3.5 text-xs dark:border-purple-900/50 dark:bg-[#120a24]">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">
+              {isInterviewerSpeaking ? '🎙️ AI Interviewer Speaking...' : isListening ? '🗣️ Candidate Speaking (Transcribing)...' : '📋 Active Discussion'}
+            </p>
+            <p className="text-slate-800 dark:text-purple-200 leading-relaxed font-sans text-sm">
+              {isInterviewerSpeaking ? (spokenText || currentQ?.text) : isListening ? (interimTranscript || answerText || 'Listening to your answer...') : (currentQ?.text || 'Waiting for next question...')}
+            </p>
+          </div>
+
+          <div className="mt-3">
+            <AudioWaveform active={isListening} />
+          </div>
         </div>
         <Suspense fallback={<div className="h-[360px] animate-pulse rounded-2xl bg-slate-900 sm:h-[480px]" aria-label="Loading interviewer avatar" />}>
           <AvatarStage speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} />
@@ -774,15 +853,36 @@ export const InterviewPage: React.FC = () => {
 
       {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-slate-700 bg-[#202124] shadow-2xl" aria-label="Video interview room">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6">
-          <div><p className="text-sm font-semibold">Interview Coach</p><p className="text-xs text-white/55">Video interview practice · Camera stays on this device</p></div>
-          <div className="flex items-center gap-2 text-xs text-white/70"><span className="h-2 w-2 rounded-full bg-emerald-400" /> Practice room</div>
+          <div><p className="text-sm font-semibold">Personal AI Interviewer</p><p className="text-xs text-white/55">Live interactive video interview · Question {orderIndex} of {totalQuestions}</p></div>
+          <div className="flex items-center gap-2 text-xs text-white/70"><span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Live Call Connected</div>
         </div>
         <div className="relative mx-auto h-[min(64vh,680px)] min-h-[380px] max-h-[680px] overflow-hidden bg-[#111214] sm:min-h-[460px]">
           <Suspense fallback={<div className="h-full min-h-[380px] animate-pulse bg-slate-900 sm:min-h-[460px]" aria-label="Loading interviewer" />}>
             <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} />
           </Suspense>
-          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/85 via-black/45 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
-            <p className="max-w-3xl rounded-lg bg-black/45 px-4 py-2 text-base font-medium leading-relaxed shadow sm:text-xl">{isInterviewerSpeaking && interviewerResponse ? interviewerResponse : currentQ?.text || 'Loading question…'}</p>
+
+          {/* Audible Check Pill in Video View */}
+          {orderIndex === 1 && !isAudibleConfirmed && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-full bg-purple-950/90 border border-purple-500/70 px-4 py-1.5 text-xs text-white shadow-2xl backdrop-blur-md">
+              <span className="font-mono text-purple-300 font-bold">🎙️ Interviewer: "Am I audible?"</span>
+              <button
+                type="button"
+                onClick={() => setIsAudibleConfirmed(true)}
+                className="rounded-full bg-emerald-500 hover:bg-emerald-400 px-3 py-0.5 text-[11px] font-bold text-slate-950 transition shadow"
+              >
+                Yes, I hear you! ✓
+              </button>
+            </div>
+          )}
+
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
+            <p className="max-w-3xl rounded-xl bg-black/60 px-5 py-3 text-base font-medium leading-relaxed shadow-xl sm:text-lg border border-white/10 backdrop-blur-md">
+              {isInterviewerSpeaking
+                ? (spokenText || interviewerResponse || currentQ?.text)
+                : isListening
+                ? `🗣️ You: ${interimTranscript || answerText || 'Listening to your response...'}`
+                : (currentQ?.text || 'Preparing next challenge…')}
+            </p>
           </div>
           <div className="absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border border-white/20 bg-[#3c4043] shadow-xl sm:right-5 sm:top-5 sm:h-40 sm:w-56">
             {cameraEnabled ? <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500 text-lg font-semibold">You</span><span className="text-xs">Camera off</span></div>}
@@ -793,7 +893,7 @@ export const InterviewPage: React.FC = () => {
         <div className="flex flex-wrap items-center justify-center gap-3 px-3 py-4 sm:gap-5 sm:px-6">
           <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} aria-label={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</button>
           <button type="button" onClick={toggleCamera} aria-label={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${cameraEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}</button>
-          <button type="button" onClick={speakQuestion} aria-label="Repeat question aloud" title="Repeat question" className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3c4043] text-white transition hover:bg-[#4b4f52]"><Volume2 className="h-5 w-5" /></button>
+          <button type="button" onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)} aria-label="Repeat question aloud" title="Repeat question" className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3c4043] text-white transition hover:bg-[#4b4f52]"><Volume2 className="h-5 w-5" /></button>
           <button type="button" onClick={handleEndVideoCall} disabled={completeSessionMutation.isPending} aria-label="End interview" title="End interview" className="flex h-12 min-w-16 items-center justify-center rounded-full bg-rose-600 px-5 text-white transition hover:bg-rose-700 disabled:opacity-50"><PhoneOff className="h-5 w-5" /></button>
           {!justEvaluatedFeedback && <button type="button" onClick={() => handleSubmitAnswer(false)} disabled={!answerText.trim() || isSubmitting || !microphoneEnabled} className="flex h-12 items-center gap-2 rounded-full bg-[#8ab4f8] px-5 text-sm font-semibold text-[#202124] hover:bg-[#aecbfa] disabled:cursor-not-allowed disabled:opacity-40"><Send className="h-4 w-4" /> Submit answer</button>}
           {isListening && <div className="basis-full"><AudioWaveform active barCount={24} /></div>}

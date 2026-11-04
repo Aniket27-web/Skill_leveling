@@ -48,22 +48,70 @@ class FakeLLMProvider(BaseLLMProvider):
         # Extract words from <resume>...</resume>
         resume_match = re.search(r"<resume>(.*?)</resume>", prompt, re.DOTALL)
         resume_content = resume_match.group(1) if resume_match else prompt
-        words = [w for w in re.findall(r"[A-Za-z0-9_+#.-]{4,}", resume_content) if w.lower() not in {"data", "resume", "experience", "skills", "projects"}]
-        if not words:
-            words = ["Python", "Architecture", "PostgreSQL", "FastAPI", "Distributed"]
+
+        # Identify candidate's name or header words to explicitly exclude them from being treated as projects/skills
+        first_lines = [line.strip() for line in resume_content.splitlines() if line.strip()][:3]
+        name_tokens = set()
+        for fl in first_lines:
+            for tok in re.findall(r"[A-Za-z]+", fl):
+                name_tokens.add(tok.lower())
+
+        stop_words = {
+            "data", "resume", "experience", "skills", "projects", "education",
+            "curriculum", "vitae", "contact", "email", "phone", "profile",
+            "summary", "university", "college", "school", "bachelor", "master",
+            "degree", "student", "engineer", "developer", "fresher", "intern",
+            "about", "github", "linkedin", "address", "india", "page",
+        } | name_tokens
+
+        # Recognized technical keywords
+        known_techs = [
+            "Python", "JavaScript", "TypeScript", "React", "FastAPI", "Django",
+            "Node.js", "Docker", "PostgreSQL", "MongoDB", "Redis", "Kubernetes",
+            "Git", "AWS", "REST API", "GraphQL", "C++", "Java", "Linux", "SQL"
+        ]
+        found_techs = [tech for tech in known_techs if re.search(rf"\b{re.escape(tech)}\b", resume_content, re.IGNORECASE)]
+
+        # Extract project headers or lines from projects section if available
+        project_candidates = []
+        in_proj_section = False
+        for line in resume_content.splitlines():
+            clean_l = line.strip(" \t-•*#|")
+            if not clean_l:
+                continue
+            if re.search(r"^(projects?|academic projects?|selected projects?)$", clean_l, re.IGNORECASE):
+                in_proj_section = True
+                continue
+            if in_proj_section and re.search(r"^(skills?|experience|education|certifications?)$", clean_l, re.IGNORECASE):
+                in_proj_section = False
+                continue
+            if in_proj_section and 3 <= len(clean_l.split()) <= 6:
+                if not any(token.lower() in name_tokens for token in re.findall(r"[A-Za-z]+", clean_l)):
+                    project_candidates.append(clean_l)
+
+        # Fallback words from resume excluding candidate name and stop words
+        candidate_words = [
+            w for w in re.findall(r"[A-Za-z0-9_+#.-]{4,}", resume_content)
+            if w.lower() not in stop_words and not any(ch.isdigit() for ch in w[:2])
+        ]
+
+        # Prioritize recognized technologies and real projects
+        items = found_techs + project_candidates + candidate_words
+        if not items:
+            items = ["Python", "FastAPI", "React", "PostgreSQL", "Docker", "Redis"]
 
         TEMPLATES = [
-            ("skill", "How did you implement {word} to optimize runtime performance and avoid system bottlenecks?", "skill: {word}"),
-            ("project", "Can you walk through the core architecture for {word} and justify your primary design trade-offs?", "project: {word}"),
-            ("experience", "What was the most challenging production outage or bug you diagnosed involving {word}?", "experience: {word}"),
-            ("skill", "How do you manage monitoring, fault tolerance, and data integrity when operating {word}?", "skill: {word}"),
-            ("behavioral", "Describe a high-stakes disagreement with a teammate regarding {word} and how you reached resolution.", "experience: team collaboration on {word}"),
-            ("project", "If you had to re-architect your implementation of {word} from scratch, what would you change?", "project: {word} v2"),
+            ("skill", "I noticed you have experience with {word}. Could you walk me through how you implemented it in your work and what key architectural trade-offs you made?", "skill: {word}"),
+            ("project", "Could you share the core requirements for your work on {word}? What was the primary problem you set out to solve, and what was the most interesting engineering challenge you tackled?", "project: {word}"),
+            ("experience", "When building systems with {word}, we often encounter subtle performance bottlenecks or edge cases. Can you share a memorable bug or issue you had to diagnose, and how you tracked it down?", "experience: {word}"),
+            ("skill", "In your experience with {word}, how did you handle monitoring, error recovery, and data reliability under load?", "skill: {word}"),
+            ("behavioral", "Could you tell me about a time when you and a teammate or stakeholder had differing opinions on technical direction for {word}? How did you reach a consensus?", "experience: team collaboration on {word}"),
+            ("project", "Looking back at your work with {word}, if you were to architect it again from scratch with the knowledge you have today, what would you design differently and why?", "project: {word} v2"),
         ]
 
         questions = []
         for i in range(n):
-            picked_word = words[i % len(words)]
+            picked_word = items[i % len(items)]
             if n >= 5 and i == n - 1:
                 cat, tmpl, ref_tmpl = TEMPLATES[4]
             else:
@@ -105,7 +153,7 @@ class FakeLLMProvider(BaseLLMProvider):
             }
 
         first_words = answer.split()[:4]
-        quote_sample = " ".join(first_words) if first_words else "your answer"
+        quote_sample = " ".join(first_words) if first_words else "your approach"
 
         data = {
             "dimensions": dimensions,

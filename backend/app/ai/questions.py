@@ -74,9 +74,15 @@ def generate_questions(
     safe_resume = redact_contact(resume_text)
     role_info = f"Target Role: {target_role}" if target_role else "None specified"
 
+    first_lines = [line.strip() for line in resume_text.splitlines() if line.strip()]
+    candidate_name = first_lines[0] if first_lines else "the candidate"
+    if len(candidate_name.split()) > 5 or any(ch in candidate_name for ch in "@{}[]/\\"):
+        candidate_name = "the candidate"
+
     prompt_content = (
         template.replace("{n}", str(n))
         .replace("{difficulty}", difficulty)
+        .replace("{candidate_name}", candidate_name)
         .replace("{target_role_info}", role_info)
         .replace("{interview_category}", interview_category)
         .replace("{experience_level}", experience_level)
@@ -106,6 +112,7 @@ def generate_questions(
             f"Generate exactly {missing_count} additional unique questions based on the candidate's resume.\n"
             f"Do NOT duplicate or rephrase any of these already generated questions:\n{existing_summaries}\n\n"
             f"Difficulty: {difficulty}\n"
+            f"Candidate Name: {candidate_name} (This is the candidate's personal name, NOT a project or tool)\n"
             f"Interview category: {interview_category}\nExperience level: {experience_level}\n"
             f"Target Role: {role_info}\n"
             f"<resume>\n{safe_resume}\n</resume>"
