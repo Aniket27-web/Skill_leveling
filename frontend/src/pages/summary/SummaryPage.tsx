@@ -89,18 +89,26 @@ export const SummaryPage: React.FC = () => {
   }
 
   if (error || !session) {
+    const isAuthError =
+      error?.message?.toLowerCase().includes('authenticated') ||
+      error?.message?.toLowerCase().includes('unauthorized');
+
     return (
       <div className="max-w-xl mx-auto my-12 p-8 rounded-2xl bg-white dark:bg-[#0d071a] border border-purple-200 dark:border-purple-900/60 shadow-xl text-center">
         <AlertCircle className="h-10 w-10 text-rose-500 mx-auto mb-3" />
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Summary Not Found</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          {isAuthError ? 'Hunter Authorization Required' : 'Summary Not Found'}
+        </h2>
         <p className="text-sm text-slate-600 dark:text-purple-300/80 mt-1">
-          {error?.message || 'Unable to locate interview session.'}
+          {isAuthError
+            ? 'You must be logged in to view this session summary. Please return to sign in.'
+            : (error?.message || 'Unable to locate interview session.')}
         </p>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/')}
           className="mt-6 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 text-white text-sm font-bold shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:from-purple-600 hover:to-indigo-500 transition"
         >
-          Return to Dashboard
+          {isAuthError ? 'Return to Portal & Awaken' : 'Return to Dashboard'}
         </button>
       </div>
     );

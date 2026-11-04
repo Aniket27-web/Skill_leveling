@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { User, LogIn, LogOut, Moon, Sun, Sword, Flame } from 'lucide-react';
+import { User, LogIn, LogOut, Moon, Sun, Sword, Flame, Loader2 } from 'lucide-react';
 import { clearAISettings } from './api/aiSettings';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { loadHunterProfile } from './services/skillLeveling';
@@ -203,58 +203,67 @@ const AppContent: React.FC = () => {
       </header>
 
       <main className="flex-1 pb-16">
-        <Suspense
-          fallback={
-            <div className="mx-auto max-w-7xl px-6 py-20 text-center font-mono text-sm text-purple-600 dark:text-purple-400 animate-pulse">
-              [SYSTEM: LOADING DUNGEON GATES...]
-            </div>
-          }
-        >
-          <Routes>
-            <Route
-              path="/"
-              element={
-                currentUser ? (
-                  <DashboardPage />
-                ) : (
-                  <div className="mx-auto max-w-4xl px-6 py-20 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-purple-300 bg-purple-100 px-4 py-1 text-xs font-bold uppercase tracking-wider text-purple-800 dark:border-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
-                      <Flame className="h-3.5 w-3.5 text-purple-600 animate-bounce" />
-                      The Leveling System Has Chosen You
+        {authLoading ? (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+            <Loader2 className="h-10 w-10 text-purple-600 animate-spin mb-4" />
+            <p className="font-mono text-sm uppercase tracking-wider text-purple-600 dark:text-purple-400">
+              [SYSTEM: VERIFYING HUNTER CREDENTIALS...]
+            </p>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="mx-auto max-w-7xl px-6 py-20 text-center font-mono text-sm text-purple-600 dark:text-purple-400 animate-pulse">
+                [SYSTEM: LOADING DUNGEON GATES...]
+              </div>
+            }
+          >
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  currentUser ? (
+                    <DashboardPage />
+                  ) : (
+                    <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-purple-300 bg-purple-100 px-4 py-1 text-xs font-bold uppercase tracking-wider text-purple-800 dark:border-purple-800 dark:bg-purple-950/70 dark:text-purple-300">
+                        <Flame className="h-3.5 w-3.5 text-purple-600 animate-bounce" />
+                        The Leveling System Has Chosen You
+                      </div>
+                      <h1 className="mt-6 text-4xl sm:text-6xl font-black tracking-tight text-slate-900 dark:text-white font-mono uppercase">
+                        Skill Leveling
+                      </h1>
+                      <p className="mt-3 text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">
+                        Rise from E-Rank Weakest to S-Rank Sovereign
+                      </p>
+                      <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                        Upload your technical resume and enter interview raids. High accuracy answers boost your Level (0 to 100), while poor responses trigger system penalties (-1/3 pts). Only the relentless level up.
+                      </p>
+                      <div className="mt-8 flex flex-wrap justify-center gap-4">
+                        <button
+                          onClick={() => {
+                            setIsRegister(false);
+                            setShowLoginModal(true);
+                          }}
+                          className="rounded-xl bg-purple-600 px-6 py-3.5 font-mono text-sm font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.6)] hover:bg-purple-700 transition"
+                        >
+                          Awaken & Start Raid
+                        </button>
+                      </div>
                     </div>
-                    <h1 className="mt-6 text-4xl sm:text-6xl font-black tracking-tight text-slate-900 dark:text-white font-mono uppercase">
-                      Skill Leveling
-                    </h1>
-                    <p className="mt-3 text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-600 via-indigo-500 to-fuchsia-500 bg-clip-text text-transparent">
-                      Rise from E-Rank Weakest to S-Rank Sovereign
-                    </p>
-                    <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                      Upload your technical resume and enter interview raids. High accuracy answers boost your Level (0 to 100), while poor responses trigger system penalties (-1/3 pts). Only the relentless level up.
-                    </p>
-                    <div className="mt-8 flex flex-wrap justify-center gap-4">
-                      <button
-                        onClick={() => {
-                          setIsRegister(false);
-                          setShowLoginModal(true);
-                        }}
-                        className="rounded-xl bg-purple-600 px-6 py-3.5 font-mono text-sm font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.6)] hover:bg-purple-700 transition"
-                      >
-                        Awaken & Start Raid
-                      </button>
-                    </div>
-                  </div>
-                )
-              }
-            />
-            <Route path="/dashboard" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
-            <Route path="/sessions/new" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
-            <Route path="/history" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
-            <Route path="/settings/ai" element={currentUser ? <AISettingsPage /> : <Navigate to="/" replace />} />
-            <Route path="/interview/:id" element={<InterviewPage />} />
-            <Route path="/summary/:id" element={<SummaryPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+                  )
+                }
+              />
+              <Route path="/dashboard" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
+              <Route path="/sessions/new" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
+              <Route path="/history" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
+              <Route path="/settings/ai" element={currentUser ? <AISettingsPage /> : <Navigate to="/" replace />} />
+              <Route path="/interview/:id" element={<InterviewPage />} />
+              <Route path="/summary/:id" element={<SummaryPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        )}
       </main>
 
       {/* Login Modal */}

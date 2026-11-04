@@ -158,32 +158,37 @@ export interface HunterProfile {
 }
 
 export function loadHunterProfile(): HunterProfile {
+  const fallback: HunterProfile = { level: 10, exp: 0, totalAnswered: 0, totalCorrect: 0, totalPenalties: 0, highestRank: 'E' };
   if (typeof window === 'undefined') {
-    return { level: 10, exp: 0, totalAnswered: 0, totalCorrect: 0, totalPenalties: 0, highestRank: 'E' };
+    return fallback;
   }
   try {
     const raw = localStorage.getItem(HUNTER_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      return {
-        level: Math.max(0, Math.min(100, Number(parsed.level) || 10)),
-        exp: Number(parsed.exp) || 0,
-        totalAnswered: Number(parsed.totalAnswered) || 0,
-        totalCorrect: Number(parsed.totalCorrect) || 0,
-        totalPenalties: Number(parsed.totalPenalties) || 0,
-        highestRank: parsed.highestRank || 'E',
-      };
+      if (parsed && typeof parsed === 'object') {
+        return {
+          level: Math.max(0, Math.min(100, Number.isFinite(Number(parsed.level)) ? Number(parsed.level) : 10)),
+          exp: Number(parsed.exp) || 0,
+          totalAnswered: Number(parsed.totalAnswered) || 0,
+          totalCorrect: Number(parsed.totalCorrect) || 0,
+          totalPenalties: Number(parsed.totalPenalties) || 0,
+          highestRank: parsed.highestRank || 'E',
+        };
+      }
     }
   } catch {
     // fallback
   }
-  return { level: 10, exp: 0, totalAnswered: 0, totalCorrect: 0, totalPenalties: 0, highestRank: 'E' };
+  return fallback;
 }
 
 export function saveHunterProfile(profile: HunterProfile): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(HUNTER_STORAGE_KEY, JSON.stringify(profile));
+    window.dispatchEvent(new Event('hunter_update'));
+    window.dispatchEvent(new Event('storage'));
   } catch {
     // ignore
   }
@@ -214,3 +219,4 @@ export function applyQuestionResultToHunter(
   saveHunterProfile(updatedProfile);
   return { updatedProfile, deltaInfo };
 }
+

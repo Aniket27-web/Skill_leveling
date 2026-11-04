@@ -1,28 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { getRankFromLevel, HunterProfile, loadHunterProfile } from '../services/skillLeveling';
-import { Shield, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
+import { TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface HunterStatusBarProps {
   profile?: HunterProfile;
   lastDelta?: { delta: number; reason: string } | null;
 }
 
+const FALLBACK_PROFILE: HunterProfile = {
+  level: 10,
+  exp: 0,
+  totalAnswered: 0,
+  totalCorrect: 0,
+  totalPenalties: 0,
+  highestRank: 'E',
+};
+
 export const HunterStatusBar: React.FC<HunterStatusBarProps> = ({ profile: propProfile, lastDelta }) => {
-  const [profile, setProfile] = useState<HunterProfile>(() => propProfile || loadHunterProfile());
+  const [localProfile, setLocalProfile] = useState<HunterProfile>(() => {
+    return propProfile || loadHunterProfile() || FALLBACK_PROFILE;
+  });
 
   useEffect(() => {
     if (propProfile) {
-      setProfile(propProfile);
+      setLocalProfile(propProfile);
       return;
     }
-    const update = () => setProfile(loadHunterProfile());
-    update();
-    window.addEventListener('storage', update);
-    return () => window.removeEventListener('storage', update);
+
+    const syncProfile = () => {
+      setLocalProfile(loadHunterProfile() || FALLBACK_PROFILE);
+    };
+
+    syncProfile();
+    window.addEventListener('storage', syncProfile);
+    window.addEventListener('hunter_update', syncProfile);
+    return () => {
+      window.removeEventListener('storage', syncProfile);
+      window.removeEventListener('hunter_update', syncProfile);
+    };
   }, [propProfile]);
 
-  const rank = getRankFromLevel(profile.level);
-  const progressPercent = Math.min(100, Math.max(0, profile.level));
+  const activeProfile = propProfile || localProfile || FALLBACK_PROFILE;
+  const safeLevel = Number.isFinite(activeProfile?.level) ? Math.max(0, Math.min(100, activeProfile.level)) : 10;
+  const rank = getRankFromLevel(safeLevel);
+  const progressPercent = Math.min(100, Math.max(0, safeLevel));
+
+  const totalAnswered = Number(activeProfile?.totalAnswered) || 0;
+  const totalCorrect = Number(activeProfile?.totalCorrect) || 0;
+  const totalPenalties = Number(activeProfile?.totalPenalties) || 0;
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-purple-200 bg-white p-4 shadow-sm dark:border-purple-900/50 dark:bg-black/80 dark:shadow-[0_0_20px_rgba(147,51,234,0.15)] transition-all">
@@ -45,7 +70,7 @@ export const HunterStatusBar: React.FC<HunterStatusBarProps> = ({ profile: propP
             </div>
             <div className="mt-0.5 flex items-baseline gap-2">
               <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white font-mono">
-                LEVEL {profile.level.toFixed(1)}
+                LEVEL {safeLevel.toFixed(1)}
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">/ 100</span>
             </div>
@@ -56,17 +81,17 @@ export const HunterStatusBar: React.FC<HunterStatusBarProps> = ({ profile: propP
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="text-right">
             <span className="text-slate-400 block text-[10px] uppercase">Quests Completed</span>
-            <span className="font-bold text-purple-600 dark:text-purple-400">{profile.totalAnswered}</span>
+            <span className="font-bold text-purple-600 dark:text-purple-400">{totalAnswered}</span>
           </div>
           <div className="h-6 w-px bg-slate-200 dark:bg-purple-900/50" />
           <div className="text-right">
             <span className="text-slate-400 block text-[10px] uppercase">Correct</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400">{profile.totalCorrect}</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{totalCorrect}</span>
           </div>
           <div className="h-6 w-px bg-slate-200 dark:bg-purple-900/50" />
           <div className="text-right">
             <span className="text-slate-400 block text-[10px] uppercase">Penalties</span>
-            <span className="font-bold text-rose-500">{profile.totalPenalties}</span>
+            <span className="font-bold text-rose-500">{totalPenalties}</span>
           </div>
         </div>
       </div>

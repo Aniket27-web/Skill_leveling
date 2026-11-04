@@ -232,12 +232,12 @@ export const DashboardPage: React.FC = () => {
                   <div className="mt-3 space-y-1 rounded-xl bg-white p-3 text-xs dark:bg-[#180e30] dark:border dark:border-purple-900/60">
                     <p className="font-semibold text-purple-900 dark:text-purple-300">Hunter Skill Arsenal</p>
                     <p className="text-slate-600 dark:text-purple-200/80">
-                      {selectedResume.profile.technologies.slice(0, 12).join(' · ') ||
-                        selectedResume.profile.skills.slice(0, 8).join(' · ') ||
+                      {(selectedResume.profile.technologies || []).slice(0, 12).join(' · ') ||
+                        (selectedResume.profile.skills || []).slice(0, 8).join(' · ') ||
                         'No structured skills found'}
                     </p>
                     <p className="text-slate-500 dark:text-purple-400/60 font-mono text-[11px]">
-                      {selectedResume.profile.projects.length} raids/projects · {selectedResume.profile.experience.length} experiences
+                      {(selectedResume.profile.projects || []).length} raids/projects · {(selectedResume.profile.experience || []).length} experiences
                     </p>
                   </div>
                 )}
@@ -529,7 +529,7 @@ export const DashboardPage: React.FC = () => {
                   <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip
-                    formatter={(value: number) => [`${value.toFixed(1)} / 10`, 'Score']}
+                    formatter={(value: any) => [`${Number(value ?? 0).toFixed(1)} / 10`, 'Score']}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.name || ''}
                   />
                   <Line

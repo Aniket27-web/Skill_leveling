@@ -13,7 +13,8 @@ export const HunterRankBadge: React.FC<HunterRankBadgeProps> = ({
   size = 'md',
   showDetails = true,
 }) => {
-  const rankInfo = getRankFromLevel(level);
+  const safeLevel = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) : 10;
+  const rankInfo = getRankFromLevel(safeLevel);
 
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-xs',
@@ -49,7 +50,7 @@ export const HunterRankBadge: React.FC<HunterRankBadgeProps> = ({
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-black tracking-tight text-purple-600 dark:text-purple-400 font-mono">
-              LVL {Math.round(level)}/100
+              LVL {Math.round(safeLevel)}/100
             </span>
           </div>
           <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">
@@ -60,3 +61,4 @@ export const HunterRankBadge: React.FC<HunterRankBadgeProps> = ({
     </div>
   );
 };
+
