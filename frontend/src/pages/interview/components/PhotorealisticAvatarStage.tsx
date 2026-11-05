@@ -282,13 +282,13 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
       {/* Top Left: Executive Google Meet / Zoom Conference Pill */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-full bg-black/60 border border-white/15 px-3.5 py-1.5 backdrop-blur-md shadow-lg">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-full bg-black/75 border border-purple-400/45 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_0_1px_rgba(0,0,0,0.9),0_4px_18px_rgba(0,0,0,0.45)]">
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
         <span className="text-xs font-semibold text-white tracking-wide">{interviewerName}</span>
       </div>
 
       {/* Bottom Left: State & Audio Visualizer Badge */}
-      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-3 rounded-full bg-slate-950/75 border border-white/15 px-4 py-2 backdrop-blur-md shadow-xl text-xs text-white">
+      <div className="absolute bottom-4 left-4 z-10 flex items-center gap-3 rounded-full bg-black/85 border border-purple-400/40 px-4 py-2 backdrop-blur-md shadow-[0_0_0_1px_rgba(0,0,0,0.95),0_8px_24px_rgba(0,0,0,0.5)] text-xs text-white">
         <div className="flex items-center gap-1.5">
           {speaking && (
             <div className="flex items-center gap-0.5 h-3">

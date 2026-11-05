@@ -596,7 +596,7 @@ export const DashboardPage: React.FC = () => {
               >
                 {createMutation.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Opening Dungeon Gate…
+                    <Loader2 className="h-4 w-4 animate-spin" /> Generating questions with Gemini…
                   </>
                 ) : (
                   <>

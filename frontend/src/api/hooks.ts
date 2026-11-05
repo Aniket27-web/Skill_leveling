@@ -32,6 +32,7 @@ interface SubmitAnswerVariables {
   questionId: string;
   payload: AnswerPayload;
   idempotencyKey?: string;
+  deferEval?: boolean;
 }
 
 /**
@@ -41,7 +42,7 @@ export function useSubmitAnswer() {
   const queryClient = useQueryClient();
 
   return useMutation<AnswerResponse, Error, SubmitAnswerVariables>({
-    mutationFn: async ({ sessionId, questionId, payload, idempotencyKey }) => {
+    mutationFn: async ({ sessionId, questionId, payload, idempotencyKey, deferEval }) => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -49,7 +50,11 @@ export function useSubmitAnswer() {
         headers['Idempotency-Key'] = idempotencyKey;
       }
 
-      const res = await fetch(`/api/sessions/${sessionId}/questions/${questionId}/answer`, {
+      const url = deferEval
+        ? `/api/sessions/${sessionId}/questions/${questionId}/answer?defer_eval=true`
+        : `/api/sessions/${sessionId}/questions/${questionId}/answer`;
+
+      const res = await fetch(url, {
         method: 'POST',
         headers,
         credentials: 'include',
@@ -150,4 +155,3 @@ export async function downloadReport(sessionId: string): Promise<void> {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
-

@@ -1,3 +1,5 @@
+import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import List, Optional, Union
 from fastapi import APIRouter, Depends, Header, Query, Response, status
@@ -9,6 +11,8 @@ from app.ai import (
     generate_questions,
     summarize_session,
 )
+
+logger = logging.getLogger(__name__)
 from app.core.database import get_db
 from app.core.deps import get_current_user, get_owned_session
 from app.core.errors import (
@@ -242,6 +246,7 @@ def answer_question(
     id: str,
     qid: str,
     data: AnswerRequest,
+    defer_eval: Optional[bool] = Query(False),
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -296,6 +301,20 @@ def answer_question(
     question.answered_at = now
     question.eval_status = "pending"
     db.commit()
+
+    if defer_eval or session.interview_mode == "video":
+        db.refresh(question)
+        return AnswerResponse(
+            question_id=question.id,
+            eval_status="pending",
+            score=None,
+            dimensions=None,
+            strengths=[],
+            improvements=[],
+            missed_points=[],
+            ideal_outline=[],
+            interviewer_response="Thank you. Let's move on to the next question." if session.interview_mode == "video" else None,
+        )
 
     words = data.answer_text.strip().split()
 
@@ -486,6 +505,81 @@ def complete_session(
         .order_by(Question.order_index)
         .all()
     )
+
+    # Batch evaluate any answered questions that were deferred to the end of the interview
+    pending_questions = [
+        q for q in all_questions
+        if q.answer_text is not None and q.eval_status == "pending"
+    ]
+    if pending_questions:
+        resume_text = session.resume.extracted_text if session.resume else None
+
+        def _eval_single(q: Question, next_text: Optional[str]):
+            words = q.answer_text.strip().split()
+            if len(words) < 3:
+                return {
+                    "score": 0,
+                    "dimensions": {"relevance": 0, "accuracy": 0, "depth": 0, "clarity": 0},
+                    "strengths": [],
+                    "improvements": ["Answer was too short to evaluate. Please provide a more detailed response."],
+                    "missed_points": [],
+                    "ideal_outline": [],
+                    "eval_status": "done",
+                }
+            try:
+                evaluation = evaluate_answer(
+                    question_text=q.text,
+                    category=q.category,
+                    answer_text=q.answer_text,
+                    difficulty=session.difficulty,
+                    resume_text=resume_text,
+                    next_question=next_text,
+                )
+                dims = evaluation.dimensions.model_dump() if hasattr(evaluation.dimensions, "model_dump") else evaluation.dimensions
+                score = compute_score(dims)
+                return {
+                    "score": score,
+                    "dimensions": dims,
+                    "strengths": evaluation.strengths or [],
+                    "improvements": evaluation.improvements or [],
+                    "missed_points": evaluation.missed_points or [],
+                    "ideal_outline": evaluation.ideal_outline or [],
+                    "prompt_version": getattr(evaluation, "prompt_version", "evaluate_v1"),
+                    "eval_status": "done",
+                }
+            except Exception as e:
+                logger.error(f"Error evaluating question {q.id} during complete_session: {e}")
+                return {
+                    "score": 0,
+                    "dimensions": {"relevance": 0, "accuracy": 0, "depth": 0, "clarity": 0},
+                    "strengths": [],
+                    "improvements": ["Automated evaluation could not complete for this question."],
+                    "missed_points": [],
+                    "ideal_outline": [],
+                    "eval_status": "failed",
+                }
+
+        workers = min(len(pending_questions), 5)
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            future_to_q = {}
+            for idx, q in enumerate(pending_questions):
+                next_q = all_questions[idx + 1] if idx + 1 < len(all_questions) else None
+                future = executor.submit(_eval_single, q, next_q.text if next_q else None)
+                future_to_q[future] = q
+
+            for future, q in future_to_q.items():
+                res = future.result()
+                q.score = res["score"]
+                q.dimensions = res["dimensions"]
+                q.strengths = res["strengths"]
+                q.improvements = res["improvements"]
+                q.missed_points = res["missed_points"]
+                q.ideal_outline = res["ideal_outline"]
+                if "prompt_version" in res:
+                    q.prompt_version = res["prompt_version"]
+                q.eval_status = res["eval_status"]
+
+        db.commit()
 
     # Unanswered or failed questions count as 0
     scores = [

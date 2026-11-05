@@ -14,18 +14,21 @@ class GeminiCapacityExhaustedError(RuntimeError):
 
 class GeminiProvider(BaseLLMProvider):
     CAPACITY_FALLBACKS = {
-        "gemini-3.8-flash": ["gemini-3.6-flash", "gemini-3.5-flash-lite"],
-        "gemini-3.7-flash": ["gemini-3.6-flash", "gemini-3.5-flash-lite"],
-        "gemini-3.6-flash": ["gemini-3.5-flash-lite"],
+        "gemini-3.5-flash-lite": ["gemini-2.5-flash"],
+        "gemini-2.5-flash": ["gemini-3.5-flash-lite"],
     }
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
-        self.api_key = api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY)
-        configured_model = model or os.getenv("LLM_MODEL", settings.LLM_MODEL)
-        # Gemini 1.5 Flash has been retired. Keep old local .env files working
-        # by upgrading that known model ID to Google's current Flash model.
-        legacy_models = {"gemini-1.5-flash": "gemini-3.8-flash"}
-        self.model = legacy_models.get(configured_model, configured_model or "gemini-3.8-flash")
+        self.api_key = (api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY) or "").strip()
+        raw_model = (model or os.getenv("LLM_MODEL", settings.LLM_MODEL) or "gemini-3.5-flash-lite").strip()
+        legacy_models = {
+            "gemini-1.5-flash": "gemini-3.5-flash-lite",
+            "gemini-2.0-flash": "gemini-3.5-flash-lite",
+            "gemini-3.8-flash": "gemini-3.5-flash-lite",
+            "gemini-3.7-flash": "gemini-3.5-flash-lite",
+            "gemini-3.6-flash": "gemini-3.5-flash-lite",
+        }
+        self.model = legacy_models.get(raw_model, raw_model or "gemini-3.5-flash-lite")
 
     def generate(
         self,

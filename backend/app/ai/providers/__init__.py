@@ -27,7 +27,7 @@ def get_provider(
             raise ValueError("A custom OpenAI-compatible endpoint is required.")
         return OpenAIProvider(api_key=api_key or os.getenv("LLM_API_KEY", settings.LLM_API_KEY), model=model or os.getenv("LLM_MODEL", settings.LLM_MODEL) or "gpt-5.5", base_url=configured_base_url)
     elif name == "gemini":
-        configured_model = model or ("gemini-3.8-flash" if api_key else None)
+        configured_model = model or os.getenv("LLM_MODEL", settings.LLM_MODEL) or "gemini-3.5-flash-lite"
         return GeminiProvider(api_key=api_key, model=configured_model)
     else:
         return FakeLLMProvider()

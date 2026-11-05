@@ -16,6 +16,7 @@ if str(backend_dir) not in sys.path:
 # Set test environment
 os.environ["ENVIRONMENT"] = "test"
 os.environ["SECRET_KEY"] = "test-secret-key-for-unit-testing-32-chars-long"
+os.environ["LLM_PROVIDER"] = "fake"
 
 from app.core.database import Base, get_db
 from app.core.security import create_access_token, hash_password

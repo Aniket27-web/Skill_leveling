@@ -109,7 +109,7 @@ All system documentation, diagrams, specifications, and evaluation guides are or
    # Copy backend environment template
    cp backend/.env.example backend/.env
    ```
-   > By default, `LLM_PROVIDER=fake` is configured for instant offline demo and testing without requiring third-party API keys.
+   > Interview question generation uses Gemini by default. Add a Gemini API key to `backend/.env`; fake mode is intended for offline development and testing.
    > To use live LLM APIs, set:
    > - `LLM_PROVIDER=gemini` and `LLM_API_KEY=your_gemini_api_key`
    > - or `LLM_PROVIDER=openai` and `LLM_API_KEY=your_openai_api_key`
