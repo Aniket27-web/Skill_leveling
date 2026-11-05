@@ -383,7 +383,7 @@ const AppContent: React.FC = () => {
                 className="inline-flex items-center rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-[0_0_12px_rgba(147,51,234,0.5)] hover:bg-purple-700 transition"
               >
                 <LogIn className="mr-1.5 h-3.5 w-3.5" />
-                Awaken Hunter
+                Login
               </button>
             )}
           </div>
@@ -524,13 +524,12 @@ const AppContent: React.FC = () => {
                               return (
                                 <div
                                   key={rKey}
-                                  className={`rounded-2xl border p-4 backdrop-blur-sm transition-all hover:-translate-y-1 ${
-                                    rKey === 'S'
-                                      ? 'border-purple-500/80 bg-gradient-to-b from-purple-950/40 to-[#120726] shadow-[0_0_20px_rgba(168,85,247,0.4)]'
-                                      : rKey === 'A'
+                                  className={`rounded-2xl border p-4 backdrop-blur-sm transition-all hover:-translate-y-1 ${rKey === 'S'
+                                    ? 'border-purple-500/80 bg-gradient-to-b from-purple-950/40 to-[#120726] shadow-[0_0_20px_rgba(168,85,247,0.4)]'
+                                    : rKey === 'A'
                                       ? 'border-indigo-400/60 bg-white/70 dark:bg-[#0e071f]/80'
                                       : 'border-purple-200/60 bg-white/60 dark:border-purple-900/40 dark:bg-[#0c0517]/60'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="font-mono text-xl font-black text-purple-700 dark:text-purple-300">
@@ -710,8 +709,8 @@ const AppContent: React.FC = () => {
                   {isForgotPassword
                     ? 'Security Recovery'
                     : isRegister
-                    ? 'Hunter Awakening'
-                    : 'Hunter Authorization'}
+                      ? 'Hunter Awakening'
+                      : 'Hunter Authorization'}
                 </h3>
                 <p className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
                   {isForgotPassword ? 'OTP Verification Gate' : 'Skill Leveling Gate System'}
