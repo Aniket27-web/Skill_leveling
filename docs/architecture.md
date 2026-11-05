@@ -152,3 +152,4 @@ stateDiagram-v2
 3. **Draft Preservation**: Active input text is continuously mirrored to `sessionStorage` and guarded with `beforeunload` warnings.
 4. **Idempotent Evaluations**: Answer submissions verify idempotency keys to prevent duplicate scoring or charging.
 5. **Zero Client-Exposed API Keys**: LLM provider credentials reside exclusively in `backend/.env`. The frontend cannot read or compromise server API keys.
+

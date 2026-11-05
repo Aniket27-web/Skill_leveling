@@ -121,3 +121,4 @@ Skill Leveling operates as a self-contained web platform with a React single-pag
 ### 4.4. Usability & Accessibility
 - The interface shall support both Dark Mode (Mana purple and deep black) and Light Mode (vibrant purple and white).
 - All buttons and controls shall include accessible ARIA labels.
+

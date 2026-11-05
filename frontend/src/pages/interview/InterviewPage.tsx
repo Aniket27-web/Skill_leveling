@@ -16,6 +16,7 @@ import { DeliveryStatsView } from './components/DeliveryStatsView';
 import { AudioWaveform } from './components/AudioWaveform';
 import { HunterStatusBar } from '../../components/HunterStatusBar';
 import { applyQuestionResultToHunter, LevelDeltaCalculation } from '../../services/skillLeveling';
+import logoImg from '../../assests/logo/Skill Leveling Growth Emblem.png';
 
 const AvatarStage = lazy(() => import('./components/AvatarStage').then((module) => ({ default: module.AvatarStage })));
 type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo';
@@ -851,10 +852,16 @@ export const InterviewPage: React.FC = () => {
         </Suspense>
       </section>}
 
-      {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-slate-700 bg-[#202124] shadow-2xl" aria-label="Video interview room">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6">
-          <div><p className="text-sm font-semibold">Personal AI Interviewer</p><p className="text-xs text-white/55">Live interactive video interview · Question {orderIndex} of {totalQuestions}</p></div>
-          <div className="flex items-center gap-2 text-xs text-white/70"><span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Live Call Connected</div>
+      {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl" aria-label="Video interview room">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 border-b border-purple-900/40 bg-gradient-to-r from-purple-950/80 via-[#0d071a] to-purple-950/80 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
+            <div>
+              <p className="text-sm font-bold text-white flex items-center gap-2">Personal AI Interviewer <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.2 rounded">Gate Arena</span></p>
+              <p className="text-xs text-purple-300/70">Live interactive video interview · Question {orderIndex} of {totalQuestions}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono text-purple-200"><span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" /> Live Call Connected</div>
         </div>
         <div className="relative mx-auto h-[min(64vh,680px)] min-h-[380px] max-h-[680px] overflow-hidden bg-[#111214] sm:min-h-[460px]">
           <Suspense fallback={<div className="h-full min-h-[380px] animate-pulse bg-slate-900 sm:min-h-[460px]" aria-label="Loading interviewer" />}>

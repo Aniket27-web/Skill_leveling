@@ -156,3 +156,4 @@ sequenceDiagram
     Client->>Client: Calculate Level Delta (+10.0 or -3.3 penalty)
     Client->>Candidate: Level bar animates, Hunter badge updates rank, AI speaks feedback
 ```
+

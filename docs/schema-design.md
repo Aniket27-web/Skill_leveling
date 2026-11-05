@@ -175,3 +175,4 @@ Stores individual interview questions, candidate responses, dimensional scores, 
 
 ### 3.2. `sessionStorage` Keys
 - **`draft_answer_{sessionId}_{questionId}`**: Live text mirroring for unsubmitted drafts. Automatically cleared upon successful submission or session exit.
+

@@ -89,3 +89,4 @@ Or start individually:
    - Complete the session to view the **Summary Page**.
    - Inspect the Overall Score Ring Gauge, Top Strengths, and per-question breakdown.
    - Click **Download PDF Report** to download the publication-grade ReportLab PDF.
+

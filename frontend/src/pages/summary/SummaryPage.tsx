@@ -5,6 +5,7 @@ import { Question } from '../../api/types';
 import { HunterRankBadge } from '../../components/HunterRankBadge';
 import { HunterStatusBar } from '../../components/HunterStatusBar';
 import { loadHunterProfile } from '../../services/skillLeveling';
+import logoImg from '../../assests/logo/Skill Leveling Growth Emblem.png';
 import {
   BarChart,
   Bar,
@@ -196,23 +197,26 @@ export const SummaryPage: React.FC = () => {
 
       {/* Hero Header: Title & Action Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-purple-200 dark:border-purple-900/50">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
-              Dungeon Raid Cleared
-            </span>
-            {session.difficulty && (
-              <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 dark:bg-[#180e30] dark:text-purple-300 px-2.5 py-0.5 rounded-full capitalize">
-                {session.difficulty} Raid
+        <div className="flex items-center gap-3">
+          <img src={logoImg} alt="Skill Leveling Emblem" className="h-12 w-12 object-contain drop-shadow-[0_0_15px_rgba(147,51,234,0.6)] shrink-0" />
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
+                Dungeon Raid Cleared
               </span>
-            )}
+              {session.difficulty && (
+                <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 dark:bg-[#180e30] dark:text-purple-300 px-2.5 py-0.5 rounded-full capitalize">
+                  {session.difficulty} Raid
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1">
+              Skill Leveling · Dungeon Debrief
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-purple-400/70 mt-0.5 font-mono">
+              {session.target_role || 'General Software Engineering'} • {session.num_questions} Questions
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 mt-1.5">
-            Skill Leveling · Dungeon Debrief
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-purple-400/70 mt-0.5 font-mono">
-            {session.target_role || 'General Software Engineering'} • {session.num_questions} Questions
-          </p>
         </div>
 
         {/* Action Buttons: Download PDF, Practice Again, View History */}

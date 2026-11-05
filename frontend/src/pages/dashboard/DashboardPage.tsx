@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, FileText, Loader2, Plus, Trash2, UploadCloud, Shield, Flame, Zap } from 'lucide-react';
 import { Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { HunterStatusBar } from '../../components/HunterStatusBar';
+import logoImg from '../../assests/logo/Skill Leveling Growth Emblem.png';
 
 type Resume = { id: string; filename: string; created_at: string; char_count?: number; preview?: string; profile?: { skills: string[]; technologies: string[]; projects: string[]; education: string[]; experience: string[] } | null };
 type SessionItem = {
@@ -139,21 +140,28 @@ export const DashboardPage: React.FC = () => {
       <HunterStatusBar />
 
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black uppercase tracking-[0.2em] font-mono text-purple-700 bg-purple-100 dark:bg-purple-950/80 dark:border dark:border-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-full">
-              Dungeon Gate System
-            </span>
-            <span className="text-xs text-slate-500 dark:text-purple-400/80 font-mono">
-              E-Rank to S-Rank Monarch
-            </span>
+        <div className="flex items-start gap-4">
+          <img
+            src={logoImg}
+            alt="Skill Leveling Growth Emblem"
+            className="h-16 w-16 sm:h-20 sm:w-20 object-contain drop-shadow-[0_0_20px_rgba(147,51,234,0.5)] shrink-0 hidden sm:block hover:scale-105 transition-transform"
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.2em] font-mono text-purple-700 bg-purple-100 dark:bg-purple-950/80 dark:border dark:border-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-full">
+                Dungeon Gate System
+              </span>
+              <span className="text-xs text-slate-500 dark:text-purple-400/80 font-mono">
+                E-Rank to S-Rank Monarch
+              </span>
+            </div>
+            <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+              Awaken Your Skills. Level Up.
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-purple-300/80">
+              Upload your resume, select your dungeon rank, and conquer AI technical questions. Correct answers boost your Hunter level; inaccurate answers suffer a <span className="text-rose-600 dark:text-rose-400 font-semibold">1/3 penalty</span>.
+            </p>
           </div>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-            Awaken Your Skills. Level Up.
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-purple-300/80">
-            Upload your resume, select your dungeon rank, and conquer AI technical questions. Correct answers boost your Hunter level; inaccurate answers suffer a <span className="text-rose-600 dark:text-rose-400 font-semibold">1/3 penalty</span>.
-          </p>
         </div>
         <div className="flex gap-3">
           <div className="rounded-2xl border border-purple-200 bg-white px-4 py-3 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">

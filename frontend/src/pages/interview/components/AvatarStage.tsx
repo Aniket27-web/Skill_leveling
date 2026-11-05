@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { VRMLoaderPlugin, type VRM } from '@pixiv/three-vrm';
+import interviewerBg from '../../../assests/Inteviewer/Interviewer_backround.jpg';
 
 export type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo';
 type AvatarStageProps = { speaking: boolean; listening: boolean; viseme: Viseme; className?: string };
@@ -130,19 +131,37 @@ function LoadedAvatar({ url, speaking, listening, viseme }: AvatarStageProps & {
 
 const configuredAvatar = import.meta.env.VITE_INTERVIEWER_MODEL_URL as string | undefined;
 
-export const AvatarStage: React.FC<AvatarStageProps> = ({ className, ...props }) => <div className={`relative overflow-hidden bg-gradient-to-b from-slate-800 via-slate-900 to-[#111a28] ${className || 'h-[360px] rounded-2xl sm:h-[480px]'}`}>
-  <AvatarRenderBoundary>
-  <Canvas camera={{ position: [0, 0.15, 4.2], fov: 36 }} dpr={[1, 1.5]} shadows gl={{ antialias: true, alpha: false }}>
-    <color attach="background" args={['#111a28']} />
-    <ambientLight intensity={0.8} />
-    <directionalLight position={[3, 5, 4]} intensity={2.1} castShadow />
-    <Environment preset="studio" />
-    <Suspense fallback={<PlaceholderAvatar {...props} />}>
-      {configuredAvatar ? <LoadedAvatar url={configuredAvatar} {...props} /> : <PlaceholderAvatar {...props} />}
-    </Suspense>
-    <ContactShadows position={[0, -1.8, 0]} opacity={0.28} scale={4} blur={2.5} far={3} />
-    <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.35} maxPolarAngle={1.7} target={[0, -0.05, 0]} />
-  </Canvas>
-  </AvatarRenderBoundary>
-  <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-white/10 bg-slate-950/50 px-3 py-1.5 text-[11px] font-medium text-white/80 backdrop-blur">{props.speaking ? 'Interviewer speaking' : props.listening ? 'Listening to you' : 'Ready for your answer'}</div>
-</div>;
+export const AvatarStage: React.FC<AvatarStageProps> = ({ className, ...props }) => (
+  <div
+    className={`relative overflow-hidden bg-slate-950 ${className || 'h-[360px] rounded-2xl sm:h-[480px]'}`}
+    style={{
+      backgroundImage: `url(${interviewerBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+    }}
+  >
+    {/* Subtle cinematic gradient overlay */}
+    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30" />
+
+    <AvatarRenderBoundary>
+      <Canvas
+        camera={{ position: [0, 0.15, 4.2], fov: 36 }}
+        dpr={[1, 1.5]}
+        shadows
+        gl={{ antialias: true, alpha: true }}
+      >
+        <ambientLight intensity={1.2} />
+        <directionalLight position={[3, 5, 4]} intensity={2.4} castShadow />
+        <Environment preset="studio" />
+        <Suspense fallback={<PlaceholderAvatar {...props} />}>
+          {configuredAvatar ? <LoadedAvatar url={configuredAvatar} {...props} /> : <PlaceholderAvatar {...props} />}
+        </Suspense>
+        <ContactShadows position={[0, -1.8, 0]} opacity={0.35} scale={4} blur={2.5} far={3} />
+        <OrbitControls enablePan={false} enableZoom={false} minPolarAngle={1.35} maxPolarAngle={1.7} target={[0, -0.05, 0]} />
+      </Canvas>
+    </AvatarRenderBoundary>
+    <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-white/15 bg-slate-950/70 px-3.5 py-1.5 text-[11px] font-medium text-white/90 backdrop-blur-md shadow-lg">
+      {props.speaking ? '🎙️ Interviewer speaking' : props.listening ? '🗣️ Listening to you' : '● Ready for your answer'}
+    </div>
+  </div>
+);
