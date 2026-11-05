@@ -1,22 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-// Core 17 Photorealistic Master JPG Action Frames
-import marcusIdle from '../../../assests/Inteviewer/marcus_vance_office_interview.jpg';
-import marcusParted from '../../../assests/Inteviewer/marcus_vance_parted.jpg';
-import marcusSpeaking from '../../../assests/Inteviewer/marcus_vance_speaking.jpg';
-import marcusRounded from '../../../assests/Inteviewer/marcus_vance_rounded.jpg';
-import marcusSpeechAccent from '../../../assests/Inteviewer/marcus_vance_speech_accent.jpg';
-import marcusThinking from '../../../assests/Inteviewer/marcus_vance_thinking.jpg';
-import marcusListening from '../../../assests/Inteviewer/marcus_vance_listening.jpg';
-import marcusHalfBlink from '../../../assests/Inteviewer/marcus_vance_half_blink.jpg';
-import marcusBlink from '../../../assests/Inteviewer/marcus_vance_blink.jpg';
-import marcusNodDown from '../../../assests/Inteviewer/marcus_vance_nod_down.jpg';
-import marcusNodUp from '../../../assests/Inteviewer/marcus_vance_nod_up.jpg';
-import marcusAttentiveLean from '../../../assests/Inteviewer/marcus_vance_attentive_lean.jpg';
-import marcusCuriousTilt from '../../../assests/Inteviewer/marcus_vance_curious_tilt.jpg';
-import marcusLookDownNotes from '../../../assests/Inteviewer/marcus_vance_look_down_notes.jpg';
-import marcusWelcomingSmile from '../../../assests/Inteviewer/marcus_vance_welcoming_smile.jpg';
-import marcusMouthWide from '../../../assests/Inteviewer/marcus_vance_mouth_wide.jpg';
-import marcusMouthNarrow from '../../../assests/Inteviewer/marcus_vance_mouth_narrow.jpg';
+
+// Dynamically import all 97 HD interviewer video animation frames
+const frameModules = import.meta.glob<{ default: string }>(
+  '../../../assests/Inteviewer/scene*.png',
+  { eager: true }
+);
+
+// Sort frames numerically in exact sequence: scene00001.png -> scene00193.png (97 frames total)
+const FRAME_URLS: string[] = Object.entries(frameModules)
+  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+  .map(([_, mod]) => mod.default);
 
 export type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo' | 'smile';
 
@@ -40,7 +33,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Live state refs to feed 60 FPS render loop without causing React re-renders
+  // Live state refs to feed 60 FPS animation loop without causing React re-renders
   const speakingRef = useRef(speaking);
   speakingRef.current = speaking;
   const listeningRef = useRef(listening);
@@ -50,11 +43,10 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
   const visemeRef = useRef(viseme);
   visemeRef.current = viseme;
 
-  // High-performance 60 FPS Engine (Zero Layout Thrashing, Single-Draw Keyframe Pipeline)
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !container || FRAME_URLS.length === 0) return;
 
     const ctx = canvas.getContext('2d', {
       alpha: false,
@@ -62,63 +54,28 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     if (!ctx) return;
 
-    // Load and decode all 17 action keyframes
-    const images: Record<string, HTMLImageElement> = {
-      idle: new Image(),
-      parted: new Image(),
-      speaking: new Image(),
-      rounded: new Image(),
-      speechAccent: new Image(),
-      thinking: new Image(),
-      listening: new Image(),
-      halfBlink: new Image(),
-      blink: new Image(),
-      nodDown: new Image(),
-      nodUp: new Image(),
-      attentiveLean: new Image(),
-      curiousTilt: new Image(),
-      lookDownNotes: new Image(),
-      welcomingSmile: new Image(),
-      mouthWide: new Image(),
-      mouthNarrow: new Image(),
-    };
-
-    images.idle.src = marcusIdle;
-    images.parted.src = marcusParted;
-    images.speaking.src = marcusSpeaking;
-    images.rounded.src = marcusRounded;
-    images.speechAccent.src = marcusSpeechAccent;
-    images.thinking.src = marcusThinking;
-    images.listening.src = marcusListening;
-    images.halfBlink.src = marcusHalfBlink;
-    images.blink.src = marcusBlink;
-    images.nodDown.src = marcusNodDown;
-    images.nodUp.src = marcusNodUp;
-    images.attentiveLean.src = marcusAttentiveLean;
-    images.curiousTilt.src = marcusCuriousTilt;
-    images.lookDownNotes.src = marcusLookDownNotes;
-    images.welcomingSmile.src = marcusWelcomingSmile;
-    images.mouthWide.src = marcusMouthWide;
-    images.mouthNarrow.src = marcusMouthNarrow;
-
-    Object.values(images).forEach((img) => {
+    // Preload & decode all 97 frames into hardware memory
+    const images: HTMLImageElement[] = FRAME_URLS.map((url) => {
+      const img = new Image();
+      img.src = url;
       if ('decode' in img) {
         img.decode().catch(() => {});
       }
+      return img;
     });
 
     let animId: number;
-    let startTime = performance.now();
+    const totalFrames = images.length; // 97 frames
 
-    // Cache destination rectangle on resize (NEVER query DOM inside animation loop)
+    // Caching aspect-fit destination rectangle (Never query DOM inside requestAnimationFrame)
     let drawX = 0;
     let drawY = 0;
-    let drawW = 960;
-    let drawH = 540;
+    let drawW = 1280;
+    let drawH = 720;
 
     const updateSize = (w: number, h: number) => {
       if (!w || !h) return;
-      const maxW = 1280;
+      const maxW = 1920;
       let targetW = Math.round(w);
       let targetH = Math.round(h);
       if (targetW > maxW) {
@@ -130,7 +87,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         canvas.height = targetH;
       }
 
-      const imgAspect = 16 / 9;
+      const imgAspect = 16 / 9; // 1280x720 is 16:9
       const canvasAspect = targetW / targetH;
       if (canvasAspect > imgAspect) {
         drawW = targetW;
@@ -143,7 +100,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       drawY = Math.round((targetH - drawH) / 2);
     };
 
-    updateSize(container.clientWidth || 960, container.clientHeight || 540);
+    updateSize(container.clientWidth || 1280, container.clientHeight || 720);
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -153,105 +110,100 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     resizeObserver.observe(container);
 
-    // Blinking variables
-    let isBlinking = false;
-    let blinkStartTime = 0;
-    let nextBlinkTime = performance.now() + 3200;
-    const BLINK_DURATION = 140; // 140ms crisp human blink
+    let speakingFrameFloat = 40.0;
+    let speechDirection = 1;
+    let listeningFloat = 0.0;
+    let listeningDir = 1;
+    let idleFloat = 0.0;
+    let idleDir = 1;
+    let lastTime = performance.now();
 
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
-      const elapsed = (now - startTime) / 1000;
+      const dt = Math.min((now - lastTime) / 1000, 0.1); // Clamp delta time to 100ms
+      lastTime = now;
 
       const isSpeaking = speakingRef.current;
       const isListening = listeningRef.current && !isSpeaking;
       const isThinking = thinkingRef.current && !isSpeaking;
 
-      // Eye blink scheduler
-      if (!isBlinking && now >= nextBlinkTime && !isSpeaking) {
-        isBlinking = true;
-        blinkStartTime = now;
-      }
+      let selectedIndex = 0;
 
-      let activeBlinkImg: HTMLImageElement | null = null;
-      if (isBlinking) {
-        const blinkElapsed = now - blinkStartTime;
-        if (blinkElapsed >= BLINK_DURATION) {
-          isBlinking = false;
-          nextBlinkTime = now + Math.random() * 2400 + 3500;
-        } else if (blinkElapsed >= 35 && blinkElapsed < 95) {
-          activeBlinkImg = images.blink;
-        } else if (blinkElapsed < 135) {
-          activeBlinkImg = images.halfBlink;
+      if (isSpeaking) {
+        // When speaking: Animate naturally through speech-articulating frames (frames 30 to 96)
+        // at 24 FPS with smooth ping-pong cycling
+        const speechMin = 30;
+        const speechMax = totalFrames - 1; // 96
+        const fps = 24.0;
+
+        speakingFrameFloat += speechDirection * (fps * dt);
+        if (speakingFrameFloat >= speechMax) {
+          speakingFrameFloat = speechMax;
+          speechDirection = -1;
+        } else if (speakingFrameFloat <= speechMin) {
+          speakingFrameFloat = speechMin;
+          speechDirection = 1;
         }
-      }
 
-      // Fast single-pass keyframe selection across all 17 action poses
-      let primaryImg = images.idle;
-
-      if (activeBlinkImg && activeBlinkImg.complete) {
-        primaryImg = activeBlinkImg;
-      } else if (isSpeaking) {
-        const currentViseme = visemeRef.current;
-        const wave = Math.sin(elapsed * 13.5);
-
-        if (wave > 0.18) {
-          // Dynamic phonetic articulation mapping
-          if (currentViseme === 'oh' || currentViseme === 'oo') {
-            primaryImg = images.rounded.complete ? images.rounded : images.speaking;
-          } else if (currentViseme === 'aa') {
-            primaryImg = images.mouthWide.complete ? images.mouthWide : images.speaking;
-          } else if (currentViseme === 'ee') {
-            primaryImg = images.mouthNarrow.complete ? images.mouthNarrow : images.speechAccent;
-          } else if (Math.sin(elapsed * 4.2) > 0.3) {
-            primaryImg = images.speechAccent.complete ? images.speechAccent : images.speaking;
-          } else {
-            primaryImg = images.speaking.complete ? images.speaking : images.parted;
-          }
-        } else if (wave > -0.45) {
-          primaryImg = images.parted.complete ? images.parted : images.idle;
-        } else {
-          primaryImg = images.idle;
-        }
-      } else if (isThinking && images.thinking.complete) {
-        // Natural contemplative cycle: evaluates code/notes then tilts curiously
-        const thinkingBeat = elapsed % 6.0;
-        if (thinkingBeat < 2.5) {
-          primaryImg = images.thinking;
-        } else if (thinkingBeat < 4.2 && images.lookDownNotes.complete) {
-          primaryImg = images.lookDownNotes; // Glances at candidate code
-        } else if (images.curiousTilt.complete) {
-          primaryImg = images.curiousTilt; // Curious head tilt
-        } else {
-          primaryImg = images.thinking;
-        }
+        selectedIndex = Math.round(speakingFrameFloat);
       } else if (isListening) {
-        // Attentive listening rhythm: lean forward -> nod in agreement -> warm smile
-        const listeningBeat = elapsed % 7.5;
-        if (listeningBeat < 2.8 && images.attentiveLean.complete) {
-          primaryImg = images.attentiveLean; // Leaning closer to camera
-        } else if (listeningBeat < 4.0 && images.nodDown.complete) {
-          primaryImg = images.nodDown; // Affirmative nod of agreement
-        } else if (listeningBeat < 4.8 && images.nodUp.complete) {
-          primaryImg = images.nodUp; // Head nod recovery
-        } else if (listeningBeat < 6.4 && images.listening.complete) {
-          primaryImg = images.listening; // Encouraging smile
-        } else {
-          primaryImg = images.idle;
+        // When listening: Attentive engagement loop across frames 0 to 35 at 14 FPS
+        // Subtle forward posture and micro-nods
+        const listenMin = 0;
+        const listenMax = Math.min(36, totalFrames - 1);
+        const fps = 14.0;
+
+        listeningFloat += listeningDir * (fps * dt);
+        if (listeningFloat >= listenMax) {
+          listeningFloat = listenMax;
+          listeningDir = -1;
+        } else if (listeningFloat <= listenMin) {
+          listeningFloat = listenMin;
+          listeningDir = 1;
         }
+
+        selectedIndex = Math.round(listeningFloat);
+      } else if (isThinking) {
+        // When thinking / evaluating: Pensive frames in range 15 to 45 at 12 FPS
+        const thinkMin = 15;
+        const thinkMax = Math.min(48, totalFrames - 1);
+        const fps = 12.0;
+
+        listeningFloat += listeningDir * (fps * dt);
+        if (listeningFloat >= thinkMax) {
+          listeningFloat = thinkMax;
+          listeningDir = -1;
+        } else if (listeningFloat <= thinkMin) {
+          listeningFloat = thinkMin;
+          listeningDir = 1;
+        }
+
+        selectedIndex = Math.round(listeningFloat);
       } else {
-        // Idle ambient presence: subtle periodic welcoming micro-expressions
-        const idleBeat = elapsed % 9.0;
-        if (idleBeat > 7.2 && idleBeat < 8.4 && images.welcomingSmile.complete) {
-          primaryImg = images.welcomingSmile;
-        } else {
-          primaryImg = images.idle;
+        // Idle resting state: gentle human presence micro-motion (frames 0 to 18) at 10 FPS
+        const idleMin = 0;
+        const idleMax = Math.min(20, totalFrames - 1);
+        const fps = 10.0;
+
+        idleFloat += idleDir * (fps * dt);
+        if (idleFloat >= idleMax) {
+          idleFloat = idleMax;
+          idleDir = -1;
+        } else if (idleFloat <= idleMin) {
+          idleFloat = idleMin;
+          idleDir = 1;
         }
+
+        selectedIndex = Math.round(idleFloat);
       }
 
-      // Single hardware draw call per frame (Silky 60 FPS, 0 stutter)
-      if (primaryImg && primaryImg.complete && primaryImg.naturalWidth > 0) {
-        ctx.drawImage(primaryImg, drawX, drawY, drawW, drawH);
+      // Safe bounds clamp
+      selectedIndex = Math.max(0, Math.min(totalFrames - 1, selectedIndex));
+      const activeImg = images[selectedIndex] || images[0];
+
+      // Draw the active video keyframe onto hardware canvas
+      if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
+        ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
       }
     };
 
@@ -281,7 +233,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       {/* Subtle Cinematic Edge Vignette */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
-      {/* Top Left: Executive Google Meet / Zoom Conference Pill */}
+      {/* Top Left: Executive Conference Pill */}
       <div className="absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-full bg-black/75 border border-purple-400/45 px-3.5 py-1.5 backdrop-blur-md shadow-[0_0_0_1px_rgba(0,0,0,0.9),0_4px_18px_rgba(0,0,0,0.45)]">
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
         <span className="text-xs font-semibold text-white tracking-wide">{interviewerName}</span>
