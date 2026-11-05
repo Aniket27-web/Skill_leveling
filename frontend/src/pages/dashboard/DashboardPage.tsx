@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, FileText, Loader2, Plus, Trash2, UploadCloud, Shield, Flame, Zap } from 'lucide-react';
 import { Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { HunterStatusBar } from '../../components/HunterStatusBar';
+import { MotivationalQuotesCard } from '../../components/MotivationalQuotesCard';
 import logoImg from '../../assests/logo/Skill Leveling Growth Emblem.png';
 import { loadUserPreferences } from '../settings/SettingsPage';
 
@@ -165,6 +166,9 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Motivational Willpower Quotes Surge (Solo Leveling & Legendary Philosophers) */}
+      <MotivationalQuotesCard />
 
       <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="rounded-3xl border border-purple-200 bg-white p-6 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a] sm:p-8">

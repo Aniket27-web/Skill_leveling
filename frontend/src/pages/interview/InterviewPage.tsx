@@ -826,44 +826,62 @@ export const InterviewPage: React.FC = () => {
         </div>
       </div>}
 
-      {session.interview_mode === 'audio' && <section className="grid gap-4 rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-white dark:bg-[#0d071a] p-5 shadow-sm lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">
-        <div>
-          <div className="mb-3 flex items-start gap-3">
+      {session.interview_mode === 'audio' && <section className="rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-white dark:bg-[#0d071a] p-5 shadow-sm space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
             <div className="rounded-xl bg-purple-100 dark:bg-purple-950 p-2.5 text-purple-700 dark:text-purple-300">
               <PhoneCall className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                Live Audio Technical Interview
+                Live Voice Technical Interview (Audio Only)
                 <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Call
+                  Live Audio Call Connected
                 </span>
               </p>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-purple-300/70">
-                Your AI interviewer speaks the questions aloud. Use your voice to answer naturally.
+                Camera and video are off. Your AI interviewer speaks the questions aloud. Use your microphone to respond naturally.
               </p>
             </div>
           </div>
-
-
-          {/* Interviewer Spoken Dialogue / Live Candidate Transcription */}
-          <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-3.5 text-xs dark:border-purple-900/50 dark:bg-[#120a24]">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">
-              {isInterviewerSpeaking ? '🎙️ AI Interviewer Speaking...' : isListening ? '🗣️ Candidate Speaking (Transcribing)...' : '📋 Active Discussion'}
-            </p>
-            <p className="text-slate-800 dark:text-purple-200 leading-relaxed font-sans text-sm">
-              {isInterviewerSpeaking ? (spokenText || currentQ?.text) : isListening ? (interimTranscript || answerText || 'Listening to your answer...') : (currentQ?.text || 'Waiting for next question...')}
-            </p>
-          </div>
-
-          <div className="mt-3">
-            <AudioWaveform active={isListening} />
-          </div>
+          <button
+            type="button"
+            onClick={() => speakQuestion(false)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300"
+          >
+            <Volume2 className="h-3.5 w-3.5" /> Replay Voice
+          </button>
         </div>
-        <Suspense fallback={<div className="h-[360px] animate-pulse rounded-2xl bg-slate-900 sm:h-[480px]" aria-label="Loading interviewer avatar" />}>
-          <AvatarStage speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
-        </Suspense>
+
+        {/* Interviewer Spoken Dialogue / Live Candidate Transcription */}
+        <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-4 text-xs dark:border-purple-900/50 dark:bg-[#120a24]">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1.5 flex items-center gap-2">
+            {isInterviewerSpeaking ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Interviewer Speaking
+              </>
+            ) : isListening ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                Candidate Speaking (Transcribing Live)
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-slate-400" />
+                Active Discussion
+              </>
+            )}
+          </p>
+          <p className="text-slate-800 dark:text-purple-200 leading-relaxed font-sans text-sm">
+            {isInterviewerSpeaking ? (spokenText || currentQ?.text) : isListening ? (interimTranscript || answerText || 'Listening to your answer...') : (currentQ?.text || 'Waiting for next question...')}
+          </p>
+        </div>
+
+        <div>
+          <AudioWaveform active={isListening || isInterviewerSpeaking} />
+        </div>
       </section>}
 
       {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl" aria-label="Video interview room">
