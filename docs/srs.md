@@ -69,7 +69,7 @@ Skill Leveling operates as a self-contained web platform with a React single-pag
 - **FR-4.4**: For sessions with 5 or more questions, the system shall include at least one behavioral question.
 
 ### FR-5: Live Interview Execution & Multi-Modal Experience
-- **FR-5.1**: In Audio and Video modes, the AI Interviewer shall greet the candidate warmly with a time-based greeting, verify audibility ("Am I audible?"), and state their role before presenting Question 1.
+- **FR-5.1**: In Audio and Video modes, the AI Interviewer shall greet the candidate warmly with a time-based greeting, and state their role before presenting Question 1 in a natural conversational flow.
 - **FR-5.2**: The system shall render a 3D animated avatar whose viseme mouth shapes (`aa`, `ee`, `oh`, `oo`, `neutral`) synchronize with the interviewer's synthesized speech.
 - **FR-5.3**: The system shall support continuous speech-to-text voice answers via Web Speech API with interim transcript streaming.
 - **FR-5.4**: The system shall compute real-time delivery metrics: Words Per Minute (WPM pace) and filler-word detection (`um`, `uh`, `like`).

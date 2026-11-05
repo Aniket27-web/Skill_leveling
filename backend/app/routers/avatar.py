@@ -262,3 +262,4 @@ def avatar_state_info(state_name: str):
     if state_upper not in valid_states:
         raise HTTPException(status_code=400, detail=f"Invalid state: {state_name}. Choose from {list(valid_states.keys())}")
     return {"state": state_upper, **valid_states[state_upper]}
+

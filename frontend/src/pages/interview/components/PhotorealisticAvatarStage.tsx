@@ -259,3 +259,4 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     </div>
   );
 };
+

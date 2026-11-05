@@ -112,8 +112,8 @@ export const InterviewPage: React.FC = () => {
   const [selectedVoiceName, setSelectedVoiceName] = useState('');
   const [interviewerResponse, setInterviewerResponse] = useState<string | null>(null);
   const [spokenText, setSpokenText] = useState<string>('');
-  const [hasDeliveredIntro, setHasDeliveredIntro] = useState<boolean>(false);
-  const [isAudibleConfirmed, setIsAudibleConfirmed] = useState<boolean>(false);
+  const hasDeliveredIntroRef = useRef<boolean>(false);
+  const lastSpokenQuestionIdRef = useRef<string | null>(null);
   const [justEvaluatedFeedback, setJustEvaluatedFeedback] = useState<any | null>(null);
   const [latestDelta, setLatestDelta] = useState<LevelDeltaCalculation | null>(null);
 
@@ -399,23 +399,35 @@ export const InterviewPage: React.FC = () => {
     const order = currentQ?.order_index ?? 1;
     let spokenSentence = currentQ.text;
 
-    if ((order === 1 && !hasDeliveredIntro) || forceFullIntro) {
+    if ((order === 1 && !hasDeliveredIntroRef.current) || forceFullIntro) {
+      hasDeliveredIntroRef.current = true;
       const greeting = getTimeBasedGreeting();
       const namePart = candidateFirstName ? ` ${candidateFirstName}` : '';
-      spokenSentence = `Hello${namePart}! ${greeting}. Can you hear me clearly? Am I audible? I am your personal AI technical interviewer today. Welcome to your mock interview! We will walk through questions based on your background and projects. Take your time, think out loud, and answer naturally. Let's start with our first question: ${currentQ.text}`;
-      setHasDeliveredIntro(true);
+      spokenSentence = `Hello${namePart}, ${greeting}! Welcome to your technical interview. I'm Marcus, and I will be conducting your session today. We will walk through questions based on your technical background and experience. Take your time, think through your solutions out loud, and speak naturally whenever you're ready. To begin, here is our first question: ${currentQ.text}`;
     } else if (order > 1) {
       spokenSentence = `Thank you. Let's move on to question ${order}: ${currentQ.text}`;
     }
 
+    if (currentQ?.id) {
+      lastSpokenQuestionIdRef.current = currentQ.id;
+    }
     speakText(spokenSentence, true);
   };
 
   useEffect(() => {
-    if (session?.status !== 'in_progress' || session?.interview_mode === 'text' || !currentQ?.text || !('speechSynthesis' in window)) return;
+    if (session?.status !== 'in_progress' || session?.interview_mode === 'text' || !currentQ?.id || !currentQ?.text || !('speechSynthesis' in window)) return;
     if (session.interview_mode === 'video' && !hasJoinedVideoCall) return;
-    speakQuestion();
-    return () => window.speechSynthesis.cancel();
+    if (lastSpokenQuestionIdRef.current === currentQ.id) return;
+
+    // Small delay ensures video and audio stream initialize smoothly in sequence
+    const timer = window.setTimeout(() => {
+      speakQuestion();
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.speechSynthesis.cancel();
+    };
   }, [session?.interview_mode, session?.status, currentQ?.id, hasJoinedVideoCall]);
 
   useEffect(() => {
@@ -819,19 +831,6 @@ export const InterviewPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive Audible Check Banner */}
-          {orderIndex === 1 && !isAudibleConfirmed && (
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-purple-300 bg-purple-50 px-3.5 py-2.5 text-xs text-purple-900 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-200">
-              <span className="font-medium">🎙️ Interviewer: "Can you hear me clearly? Am I audible?"</span>
-              <button
-                type="button"
-                onClick={() => setIsAudibleConfirmed(true)}
-                className="rounded-lg bg-purple-700 px-3 py-1 font-bold text-white hover:bg-purple-600 transition ml-2 shrink-0 shadow-sm"
-              >
-                Yes, audible! ✓
-              </button>
-            </div>
-          )}
 
           {/* Interviewer Spoken Dialogue / Live Candidate Transcription */}
           <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-3.5 text-xs dark:border-purple-900/50 dark:bg-[#120a24]">
@@ -868,19 +867,6 @@ export const InterviewPage: React.FC = () => {
             <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
           </Suspense>
 
-          {/* Audible Check Pill in Video View */}
-          {orderIndex === 1 && !isAudibleConfirmed && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 rounded-full bg-purple-950/90 border border-purple-500/70 px-4 py-1.5 text-xs text-white shadow-2xl backdrop-blur-md">
-              <span className="font-mono text-purple-300 font-bold">🎙️ Interviewer: "Am I audible?"</span>
-              <button
-                type="button"
-                onClick={() => setIsAudibleConfirmed(true)}
-                className="rounded-full bg-emerald-500 hover:bg-emerald-400 px-3 py-0.5 text-[11px] font-bold text-slate-950 transition shadow"
-              >
-                Yes, I hear you! ✓
-              </button>
-            </div>
-          )}
 
           <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
             <p className="max-w-3xl rounded-xl bg-black/60 px-5 py-3 text-base font-medium leading-relaxed shadow-xl sm:text-lg border border-white/10 backdrop-blur-md">

@@ -462,7 +462,7 @@ const AppContent: React.FC = () => {
                               </div>
                               <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">2. Multi-Modal Raids</h3>
                               <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-purple-300/80">
-                                Enter your preferred format: Text chat with draft preservation, hands-free Audio call with voice synthesis, or 3D Avatar video interview with microphone audible check.
+                                Enter your preferred format: Text chat with draft preservation, hands-free Audio call with voice synthesis, or Photorealistic Video interview with live speech and camera.
                               </p>
                             </div>
 

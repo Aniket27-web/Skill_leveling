@@ -28,10 +28,10 @@
 
 ---
 
-### 3. Interactive 3D Avatar & Video Practice Room
-*Practice in video mode with a local camera preview and an interactive 3D interviewer avatar with viseme lip synchronization and an interactive audibility check ("Am I audible?").*
+### 3. Photorealistic Human Interviewer & Video Practice Room
+*Practice in video mode with a local camera preview and an executive photorealistic AI interviewer featuring audio-driven viseme lip synchronization, natural blinking, micro-expressions, and professional office atmosphere.*
 
-![3D Avatar Video Room](./screenshots/video_interview.png)
+![Photorealistic Video Room](./screenshots/video_interview.png)
 *(Image location: `screenshots/video_interview.png` — add your video screenshot here)*
 
 ---
@@ -75,7 +75,7 @@ All system documentation, diagrams, specifications, and evaluation guides are or
 - **Multi-Modal Practice**:
   - **Text Mode**: Traditional keyboard-driven technical chat with keyboard shortcuts (`Ctrl+Enter`) and draft preservation.
   - **Audio Call Mode**: Reads questions aloud with speech synthesis, offers live audio waveforms, and transcribes voice answers.
-  - **Video Call Mode**: Features a 3D animated avatar with viseme lip sync, local camera preview, and an interactive audibility check (*"Am I audible?"*).
+  - **Video Call Mode**: Features an executive photorealistic human interviewer with viseme lip sync, local camera preview, and natural conversational greeting flow.
 - **Gamified Hunter Progression**:
   - Level range: **0.0 to 100.0**
   - Hunter Ranks: **E-Rank** (Level 0–19), **D-Rank** (20–34), **C-Rank** (35–54), **B-Rank** (55–74), **A-Rank** (75–89), **S-Rank** (90–100).

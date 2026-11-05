@@ -60,3 +60,4 @@ def test_avatar_render_job():
 def test_avatar_status_not_found():
     resp = client.get("/api/avatar/status/non-existent-uuid")
     assert resp.status_code == 404
+

@@ -138,7 +138,7 @@ sequenceDiagram
     AI-->>Server: JSON: {questions: [{text, category, source_ref}, ...]}
     Server->>DB: Insert Session & Questions with shown_at
     Server-->>Client: 201 Created {session_id, first_question}
-    Client->>Candidate: AI Avatar: "Hello! Can you hear me clearly? Am I audible?..."
+    Client->>Candidate: AI Interviewer: "Hello [Name]! Welcome to your interview. Let's start with Question 1..."
 
     Note over Candidate,Server: Phase 2: Live Answer & Speech-to-Text
     Candidate->>Client: Speaks answer via microphone

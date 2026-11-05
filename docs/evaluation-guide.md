@@ -18,7 +18,7 @@ This guide assists reviewers and evaluators in verifying the **Skill Leveling: A
 | **Hunter Rank Leveling & Gamification** | **Complete (Bonus)** | [`frontend/src/services/skillLeveling.ts`](file:///d:/Edify_project/Skill_leveling/frontend/src/services/skillLeveling.ts)<br>[`frontend/src/components/HunterStatusBar.tsx`](file:///d:/Edify_project/Skill_leveling/frontend/src/components/HunterStatusBar.tsx) | Level 0–100, Ranks E to S. Correct answers give +pts; subpar answers incur a 1/3 penalty. |
 | **Target Job Role Customization** | **Complete (Bonus)** | [`prompts/questions_v1.md`](file:///d:/Edify_project/Skill_leveling/prompts/questions_v1.md) | Target role parameter tailors questions and probes gap areas. |
 | **Voice Speech-to-Text & Stats** | **Complete (Bonus)** | [`frontend/src/pages/interview/hooks/useSpeechRecognition.ts`](file:///d:/Edify_project/Skill_leveling/frontend/src/pages/interview/hooks/useSpeechRecognition.ts) | Continuous voice transcription, WPM indicator, and filler-word detection (`um`, `uh`, `like`). |
-| **Interactive 3D Avatar & Video** | **Complete (Bonus)** | [`frontend/src/pages/interview/components/AvatarStage.tsx`](file:///d:/Edify_project/Skill_leveling/frontend/src/pages/interview/components/AvatarStage.tsx) | 3D avatar with viseme lip sync and audible check ("Am I audible?") banner. |
+| **Photorealistic AI Interviewer & Video** | **Complete (Bonus)** | [`frontend/src/pages/interview/components/AvatarStage.tsx`](file:///d:/Edify_project/Skill_leveling/frontend/src/pages/interview/components/AvatarStage.tsx) | Photorealistic adult male interviewer in executive corporate office with audio-driven lip sync and micro-expressions. |
 | **Per-Question Timer** | **Complete (Bonus)** | [`frontend/src/pages/interview/hooks/useCountdown.ts`](file:///d:/Edify_project/Skill_leveling/frontend/src/pages/interview/hooks/useCountdown.ts) | Circular countdown with dynamic color shifts (blue -> amber -> red) and auto-submit. |
 | **Downloadable PDF Report** | **Complete (Bonus)** | [`backend/app/reports/render.py`](file:///d:/Edify_project/Skill_leveling/backend/app/reports/render.py) | High-fidelity ReportLab PDF with score gauges, vector charts, feedback, and `"Page X of Y"` footers. |
 
@@ -77,8 +77,8 @@ Or start individually:
    - Click **Enter Practice Arena**.
 5. **Interview Execution**:
    - In **Video** or **Audio** mode: The 3D interviewer avatar greets you aloud:
-     > *"Hello Aniket! Good morning. Can you hear me clearly? Am I audible? I am your personal AI technical interviewer today..."*
-   - Verify the **"Am I audible?"** banner and click **Yes, I hear you! ✓**.
+     > *"Hello Aniket, Good morning! Welcome to your technical interview. I'm Marcus, and I will be conducting your session today..."*
+   - Question 1 is presented naturally in sequence.
    - Speak your answer via microphone or type it in the textarea. Observe the real-time **WPM pace** and **filler-word count**.
    - Press `Ctrl+Enter` or click **Submit Answer**.
 6. **Gamified Scoring & 1/3 Penalty**:
