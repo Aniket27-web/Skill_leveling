@@ -521,25 +521,28 @@ const AppContent: React.FC = () => {
                           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                             {(['E', 'D', 'C', 'B', 'A', 'S'] as const).map((rKey) => {
                               const r = HUNTER_RANKS[rKey];
+                              const isSRank = rKey === 'S';
+                              const isARank = rKey === 'A';
                               return (
                                 <div
                                   key={rKey}
-                                  className={`rounded-2xl border p-4 backdrop-blur-sm transition-all hover:-translate-y-1 ${rKey === 'S'
-                                    ? 'border-purple-500/80 bg-gradient-to-b from-purple-950/40 to-[#120726] shadow-[0_0_20px_rgba(168,85,247,0.4)]'
-                                    : rKey === 'A'
-                                      ? 'border-indigo-400/60 bg-white/70 dark:bg-[#0e071f]/80'
-                                      : 'border-purple-200/60 bg-white/60 dark:border-purple-900/40 dark:bg-[#0c0517]/60'
-                                    }`}
+                                  className={`rounded-2xl border p-4 backdrop-blur-sm transition-all hover:-translate-y-1 ${
+                                    isSRank
+                                      ? 'border-purple-400/90 dark:border-purple-500/80 bg-gradient-to-b from-purple-100/90 via-fuchsia-50/70 to-white dark:from-purple-950/60 dark:to-[#120726] shadow-[0_4px_20px_rgba(168,85,247,0.22)] dark:shadow-[0_0_20px_rgba(168,85,247,0.4)] ring-1 ring-purple-300/60 dark:ring-0'
+                                      : isARank
+                                      ? 'border-indigo-300/80 dark:border-indigo-400/60 bg-white/80 dark:bg-[#0e071f]/80 shadow-sm'
+                                      : 'border-purple-200/70 bg-white/70 dark:border-purple-900/40 dark:bg-[#0c0517]/60 shadow-sm'
+                                  }`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <span className="font-mono text-xl font-black text-purple-700 dark:text-purple-300">
                                       {r.rank}-Rank
                                     </span>
-                                    <span className="text-[10px] font-mono text-slate-400 dark:text-purple-400">
+                                    <span className={`text-[10px] font-mono ${isSRank ? 'text-purple-700 dark:text-purple-300 font-bold bg-purple-100 dark:bg-purple-900/60 px-1.5 py-0.5 rounded' : 'text-slate-400 dark:text-purple-400'}`}>
                                       LVL {r.minLevel}–{r.maxLevel}
                                     </span>
                                   </div>
-                                  <p className="mt-2 text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                                  <p className={`mt-2 text-xs font-bold leading-tight ${isSRank ? 'text-purple-950 dark:text-purple-100' : 'text-slate-800 dark:text-slate-200'}`}>
                                     {r.title}
                                   </p>
                                 </div>
