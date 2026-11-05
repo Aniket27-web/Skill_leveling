@@ -3,6 +3,9 @@ import marcusIdle from '../../../assests/Inteviewer/marcus_vance_office_intervie
 import marcusParted from '../../../assests/Inteviewer/marcus_vance_parted.jpg';
 import marcusSpeaking from '../../../assests/Inteviewer/marcus_vance_speaking.jpg';
 import marcusRounded from '../../../assests/Inteviewer/marcus_vance_rounded.jpg';
+import marcusSpeechAccent from '../../../assests/Inteviewer/marcus_vance_speech_accent.jpg';
+import marcusThinking from '../../../assests/Inteviewer/marcus_vance_thinking.jpg';
+import marcusListening from '../../../assests/Inteviewer/marcus_vance_listening.jpg';
 import marcusHalfBlink from '../../../assests/Inteviewer/marcus_vance_half_blink.jpg';
 import marcusBlink from '../../../assests/Inteviewer/marcus_vance_blink.jpg';
 
@@ -33,20 +36,12 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
   speakingRef.current = speaking;
   const listeningRef = useRef(listening);
   listeningRef.current = listening;
+  const thinkingRef = useRef(isThinking);
+  thinkingRef.current = isThinking;
   const visemeRef = useRef(viseme);
   visemeRef.current = viseme;
 
-  const [liveFps, setLiveFps] = useState<number>(60);
-
-  // Status label for conference call UI
-  const statusLabel = useMemo(() => {
-    if (speaking) return { text: 'Interviewer Speaking', dot: 'bg-emerald-400 animate-pulse' };
-    if (isThinking) return { text: 'Analyzing Response...', dot: 'bg-amber-400 animate-pulse' };
-    if (listening) return { text: 'Listening Attentively', dot: 'bg-blue-400 animate-pulse' };
-    return { text: 'Ready for Answer', dot: 'bg-emerald-500' };
-  }, [speaking, listening, isThinking]);
-
-  // 60 FPS Hardware-Accelerated Video Stream Engine
+  // 60 FPS Locked, Rock-Solid Camera Engine (Zero Shaking, Multi-Action Morphing)
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -58,12 +53,15 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     if (!ctx) return;
 
-    // Load and decode all 6 high-definition photorealistic frames
+    // Load and decode all 9 photorealistic keyframes into GPU memory
     const images: Record<string, HTMLImageElement> = {
       idle: new Image(),
       parted: new Image(),
       speaking: new Image(),
       rounded: new Image(),
+      speechAccent: new Image(),
+      thinking: new Image(),
+      listening: new Image(),
       halfBlink: new Image(),
       blink: new Image(),
     };
@@ -72,6 +70,9 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     images.parted.src = marcusParted;
     images.speaking.src = marcusSpeaking;
     images.rounded.src = marcusRounded;
+    images.speechAccent.src = marcusSpeechAccent;
+    images.thinking.src = marcusThinking;
+    images.listening.src = marcusListening;
     images.halfBlink.src = marcusHalfBlink;
     images.blink.src = marcusBlink;
 
@@ -84,12 +85,12 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     let animId: number;
     let lastTime = performance.now();
     let startTime = performance.now();
-    let frameCount = 0;
-    let fpsAccumulatorTime = lastTime;
 
-    // Continuous 60 FPS interpolation variables
-    let speechOpenness = 0; // 0.0 (closed) to 1.0 (full open)
-    let blinkProgress = 0; // 0.0 (eyes open) to 1.0 (eyes closed)
+    // Continuous 60 FPS interpolation weights (smooth 0.0 to 1.0 lerp)
+    let speechWeight = 0;
+    let listeningWeight = 0;
+    let thinkingWeight = 0;
+    let blinkProgress = 0;
     let isBlinking = false;
     let nextBlinkTime = performance.now() + 3200;
     let blinkStartTime = 0;
@@ -98,18 +99,9 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
 
-      const delta = Math.min((now - lastTime) / 1000, 0.1); // clamp in case of tab switch
+      const delta = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
       const elapsed = (now - startTime) / 1000;
-
-      // 60 FPS Delta Frame-rate Counter
-      frameCount++;
-      if (now - fpsAccumulatorTime >= 1000) {
-        const calculatedFps = Math.round((frameCount * 1000) / (now - fpsAccumulatorTime));
-        setLiveFps(Math.min(calculatedFps, 60));
-        frameCount = 0;
-        fpsAccumulatorTime = now;
-      }
 
       // Responsive canvas buffer sizing (match physical container pixels)
       const rect = container.getBoundingClientRect();
@@ -122,24 +114,23 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         canvas.height = targetHeight;
       }
 
-      // 60 FPS Continuous Micro-Movements (Natural human breathing, listening nods, lateral drift)
-      const breathing = Math.sin(elapsed * 1.7) * 2.2 * dpr;
-      const sway = Math.cos(elapsed * 0.9) * 1.1 * dpr;
-      const nod = listeningRef.current ? Math.sin(elapsed * 3.4) * 2.6 * dpr : 0;
+      // Target pose weights (smooth 60 FPS convergence)
+      const targetListening = listeningRef.current && !speakingRef.current ? 1.0 : 0.0;
+      const targetThinking = thinkingRef.current && !speakingRef.current ? 1.0 : 0.0;
+      listeningWeight += (targetListening - listeningWeight) * 0.15;
+      thinkingWeight += (targetThinking - thinkingWeight) * 0.15;
 
-      // Continuous Speech Envelope Calculation (At 60 FPS)
+      // Speech openness calculation (multi-frequency harmonic vowel rhythm at 60 FPS)
       if (speakingRef.current) {
-        // Multi-frequency harmonic wave simulating vowel articulation rhythms
         const targetOpen =
           (Math.sin(elapsed * 14.5) * 0.48 + 0.52) *
           (Math.cos(elapsed * 7.8) * 0.35 + 0.65);
-        // 60 FPS smooth exponential convergence (instant responsive lip-sync)
-        speechOpenness += (targetOpen - speechOpenness) * 0.28;
+        speechWeight += (targetOpen - speechWeight) * 0.28;
       } else {
-        speechOpenness += (0 - speechOpenness) * 0.22;
+        speechWeight += (0 - speechWeight) * 0.22;
       }
 
-      // Continuous Eye Blink Envelope Calculation (At 60 FPS)
+      // Continuous Eye Blink Envelope Calculation (60 FPS smooth arc)
       if (!isBlinking && now >= nextBlinkTime && !speakingRef.current) {
         isBlinking = true;
         blinkStartTime = now;
@@ -150,9 +141,9 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         if (blinkElapsed >= BLINK_DURATION) {
           isBlinking = false;
           blinkProgress = 0;
-          nextBlinkTime = now + Math.random() * 2200 + 3000; // Next blink in 3.0-5.2s
+          nextBlinkTime = now + Math.random() * 2400 + 3200;
         } else {
-          // Smooth sinusoidal eyelid arc (0 -> 1 -> 0)
+          // Smooth sinusoidal eyelid curve (0 -> 1 -> 0)
           const t = blinkElapsed / BLINK_DURATION;
           blinkProgress = Math.sin(t * Math.PI);
         }
@@ -160,13 +151,10 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         blinkProgress = 0;
       }
 
-      // Draw onto Canvas Context with Hardware Acceleration
+      // Hardware Accelerated Render (Rock-Solid Camera Position - NO shaking)
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-
-      // Transform with subtle 1.02 scale and camera movements
-      ctx.translate(sway, breathing + nod);
 
       const baseImg = images.idle;
       if (!baseImg.complete || baseImg.naturalWidth === 0) {
@@ -174,75 +162,81 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         return;
       }
 
-      // Compute centered "object-cover" destination rect
+      // Fixed, perfectly centered "object-cover" destination rect (ZERO wobble)
       const imgAspect = baseImg.naturalWidth / baseImg.naturalHeight;
       const canvasAspect = canvas.width / canvas.height;
       let drawW: number;
       let drawH: number;
-      let drawX: number;
-      let drawY: number;
 
-      const scalePadding = 1.02; // Prevents edge clipping during subtle micro-sway
       if (canvasAspect > imgAspect) {
-        drawW = canvas.width * scalePadding;
-        drawH = (canvas.width / imgAspect) * scalePadding;
+        drawW = canvas.width;
+        drawH = canvas.width / imgAspect;
       } else {
-        drawH = canvas.height * scalePadding;
-        drawW = canvas.height * imgAspect * scalePadding;
+        drawH = canvas.height;
+        drawW = canvas.height * imgAspect;
       }
-      drawX = (canvas.width - drawW) / 2;
-      drawY = (canvas.height - drawH) / 2;
+      const drawX = Math.round((canvas.width - drawW) / 2);
+      const drawY = Math.round((canvas.height - drawH) / 2);
 
-      // 1. Draw Base Photorealistic Image (Resting closed-mouth in executive office)
+      // 1. Draw Base Photorealistic Image (Rock-solid anchor in modern executive office)
       ctx.globalAlpha = 1.0;
       ctx.drawImage(baseImg, drawX, drawY, drawW, drawH);
 
-      // 2. 60 FPS Continuous Multi-Phoneme Speech Morphing
-      if (speechOpenness > 0.04) {
-        const currentViseme = visemeRef.current;
-        const activeMouthImg =
-          currentViseme === 'oh' || currentViseme === 'oo'
-            ? images.rounded
-            : images.speaking;
+      // 2. Action Pose: Thinking & Evaluating (Subtle contemplative head tilt)
+      if (thinkingWeight > 0.02 && images.thinking.complete) {
+        ctx.globalAlpha = Math.min(thinkingWeight, 1.0);
+        ctx.drawImage(images.thinking, drawX, drawY, drawW, drawH);
+      }
 
-        if (speechOpenness <= 0.48) {
+      // 3. Action Pose: Attentive Listening (Warm professional smile acknowledging candidate)
+      if (listeningWeight > 0.02 && images.listening.complete) {
+        ctx.globalAlpha = Math.min(listeningWeight, 1.0);
+        ctx.drawImage(images.listening, drawX, drawY, drawW, drawH);
+      }
+
+      // 4. 60 FPS Continuous Speech Articulation (Blends Parted -> Speaking/Accent/Rounded)
+      if (speechWeight > 0.04) {
+        const currentViseme = visemeRef.current;
+
+        // Choose appropriate phoneme frame
+        let activeSpeechImg = images.speaking;
+        if (currentViseme === 'oh' || currentViseme === 'oo') {
+          activeSpeechImg = images.rounded;
+        } else if (Math.sin(elapsed * 4.5) > 0.3) {
+          activeSpeechImg = images.speechAccent; // Alternates natural conversational emphasis
+        }
+
+        if (speechWeight <= 0.48) {
           // Intermediate transition: blend smoothly between Idle and Parted
           if (images.parted.complete) {
-            ctx.globalAlpha = Math.min((speechOpenness - 0.04) / 0.44, 1.0);
+            ctx.globalAlpha = Math.min((speechWeight - 0.04) / 0.44, 1.0);
             ctx.drawImage(images.parted, drawX, drawY, drawW, drawH);
           }
         } else {
-          // Open transition: blend smoothly between Parted and Full Open/Rounded
-          const openAlpha = Math.min((speechOpenness - 0.48) / 0.52, 1.0);
+          // Full speech articulation: blend smoothly between Parted and Active Phoneme
+          const openAlpha = Math.min((speechWeight - 0.48) / 0.52, 1.0);
           if (images.parted.complete) {
             ctx.globalAlpha = 1.0 - openAlpha;
             ctx.drawImage(images.parted, drawX, drawY, drawW, drawH);
           }
-          if (activeMouthImg.complete) {
+          if (activeSpeechImg.complete) {
             ctx.globalAlpha = openAlpha;
-            ctx.drawImage(activeMouthImg, drawX, drawY, drawW, drawH);
+            ctx.drawImage(activeSpeechImg, drawX, drawY, drawW, drawH);
           }
         }
       }
 
-      // 3. 60 FPS Continuous 3-Stage Eyelid Blink Morphing (Half -> Full Closed -> Half -> Open)
-      if (blinkProgress > 0.05 && !speakingRef.current) {
-        if (blinkProgress <= 0.6) {
-          // Half-closed transition
-          if (images.halfBlink.complete) {
-            ctx.globalAlpha = Math.min(blinkProgress / 0.6, 1.0);
-            ctx.drawImage(images.halfBlink, drawX, drawY, drawW, drawH);
-          }
-        } else {
-          // Full closed blink
-          const fullAlpha = Math.min((blinkProgress - 0.6) / 0.4, 1.0);
-          if (images.halfBlink.complete) {
-            ctx.globalAlpha = 1.0 - fullAlpha;
-            ctx.drawImage(images.halfBlink, drawX, drawY, drawW, drawH);
-          }
+      // 5. 60 FPS Natural 3-Stage Opaque Eyelid Blink (No translucent bleed-through)
+      if (isBlinking && !speakingRef.current) {
+        const blinkElapsed = now - blinkStartTime;
+        ctx.globalAlpha = 1.0;
+        if (blinkElapsed >= 35 && blinkElapsed < 95) {
           if (images.blink.complete) {
-            ctx.globalAlpha = fullAlpha;
             ctx.drawImage(images.blink, drawX, drawY, drawW, drawH);
+          }
+        } else if (blinkElapsed < 135) {
+          if (images.halfBlink.complete) {
+            ctx.drawImage(images.halfBlink, drawX, drawY, drawW, drawH);
           }
         }
       }
@@ -261,11 +255,8 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden select-none bg-slate-950 font-sans ${className}`}
-      style={{
-        perspective: '1000px',
-      }}
     >
-      {/* Locked 60 FPS Hardware-Accelerated Canvas */}
+      {/* Hardware-Accelerated Video Stream Canvas (Rock-solid fixed positioning) */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full object-cover object-center"
@@ -276,12 +267,12 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         }}
       />
 
-      {/* Layer: Cinematic Subtle Edge Vignette */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25" />
+      {/* Subtle Cinematic Edge Vignette */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/20" />
 
-      {/* Top Left: Executive Google Meet / Zoom Conference Tag */}
+      {/* Top Left: Executive Google Meet / Zoom Conference Pill */}
       <div className="absolute top-4 left-4 z-10 flex items-center gap-2.5 rounded-full bg-black/60 border border-white/15 px-3.5 py-1.5 backdrop-blur-md shadow-lg">
-        <span className={`h-2.5 w-2.5 rounded-full ${statusLabel.dot}`} />
+        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
         <span className="text-xs font-semibold text-white tracking-wide">{interviewerName}</span>
       </div>
 
@@ -303,14 +294,8 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
               <span className="w-0.5 h-3 bg-blue-400 rounded-full animate-pulse [animation-delay:0.4s]" />
             </div>
           )}
-          <span className="font-medium text-slate-200">{statusLabel.text}</span>
+          <span className="font-medium text-slate-200">{speaking ? 'Interviewer Speaking' : listening ? 'Listening Attentively' : 'Ready for Answer'}</span>
         </div>
-      </div>
-
-      {/* Bottom Right: Live 60 FPS RTX Hardware Stream Counter */}
-      <div className="absolute bottom-4 right-4 z-10 hidden sm:flex items-center gap-1.5 rounded-md bg-black/50 border border-white/15 px-2.5 py-1 text-[10px] font-mono font-medium text-white/80 backdrop-blur-sm shadow-md">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-        <span>{liveFps} FPS LOCKED · RTX ACCELERATED</span>
       </div>
     </div>
   );

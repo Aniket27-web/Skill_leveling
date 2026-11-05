@@ -175,3 +175,4 @@ If you did not request this code, no action is required.
     except Exception as e:
         logger.error(f"Failed to deliver SMTP email to {to_email}: {e}")
         return False
+
