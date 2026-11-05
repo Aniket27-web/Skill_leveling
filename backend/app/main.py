@@ -11,6 +11,7 @@ from app.routers import (
     progress_router,
     resumes_router,
     sessions_router,
+    avatar_router,
 )
 
 
@@ -60,4 +61,4 @@ app.include_router(ai_settings_router, prefix="/api")
 app.include_router(resumes_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")
-
+app.include_router(avatar_router, prefix="/api")

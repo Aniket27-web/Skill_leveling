@@ -848,7 +848,7 @@ export const InterviewPage: React.FC = () => {
           </div>
         </div>
         <Suspense fallback={<div className="h-[360px] animate-pulse rounded-2xl bg-slate-900 sm:h-[480px]" aria-label="Loading interviewer avatar" />}>
-          <AvatarStage speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} />
+          <AvatarStage speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
         </Suspense>
       </section>}
 
@@ -865,7 +865,7 @@ export const InterviewPage: React.FC = () => {
         </div>
         <div className="relative mx-auto h-[min(64vh,680px)] min-h-[380px] max-h-[680px] overflow-hidden bg-[#111214] sm:min-h-[460px]">
           <Suspense fallback={<div className="h-full min-h-[380px] animate-pulse bg-slate-900 sm:min-h-[460px]" aria-label="Loading interviewer" />}>
-            <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} />
+            <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
           </Suspense>
 
           {/* Audible Check Pill in Video View */}
@@ -891,9 +891,21 @@ export const InterviewPage: React.FC = () => {
                 : (currentQ?.text || 'Preparing next challenge…')}
             </p>
           </div>
-          <div className="absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border border-white/20 bg-[#3c4043] shadow-xl sm:right-5 sm:top-5 sm:h-40 sm:w-56">
-            {cameraEnabled ? <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500 text-lg font-semibold">You</span><span className="text-xs">Camera off</span></div>}
-            <span className="absolute bottom-2 left-2 rounded-md bg-black/45 px-2 py-1 text-[10px] font-medium text-white">You</span>
+          <div className={`absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border bg-[#202124] shadow-2xl transition-all sm:right-5 sm:top-5 sm:h-40 sm:w-56 ${isListening ? 'border-emerald-400 ring-2 ring-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.35)]' : 'border-white/20'}`}>
+            {cameraEnabled ? (
+              <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-lg font-bold shadow">
+                  {candidateFirstName ? candidateFirstName[0].toUpperCase() : 'Y'}
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">Camera off</span>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+              {microphoneEnabled ? <Mic className="h-3 w-3 text-emerald-400" /> : <MicOff className="h-3 w-3 text-rose-400" />}
+              <span>{candidateFirstName || 'You'}</span>
+            </div>
           </div>
           <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-[11px] font-medium text-white sm:left-5 sm:top-5"><span className="h-2 w-2 rounded-full bg-emerald-400" /> AI interviewer</div>
         </div>

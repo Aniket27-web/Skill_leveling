@@ -59,3 +59,7 @@ dist-ssr/
 *.log
 .vscode/
 .idea/
+
+# Avatar video temporary outputs
+backend/avatar_outputs/
+*.mp4
