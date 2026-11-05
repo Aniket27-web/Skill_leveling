@@ -33,7 +33,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Live state refs to feed 60 FPS animation loop without causing React re-renders
+  // Live state refs to feed animation loop without causing React re-renders
   const speakingRef = useRef(speaking);
   speakingRef.current = speaking;
   const listeningRef = useRef(listening);
@@ -67,7 +67,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     let animId: number;
     const totalFrames = images.length; // 97 frames
 
-    // Caching aspect-fit destination rectangle (Never query DOM inside requestAnimationFrame)
+    // Caching aspect-fit destination rectangle (Never query DOM inside render loop)
     let drawX = 0;
     let drawY = 0;
     let drawW = 1280;
@@ -110,98 +110,69 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     resizeObserver.observe(container);
 
-    let speakingFrameFloat = 40.0;
-    let speechDirection = 1;
-    let listeningFloat = 0.0;
-    let listeningDir = 1;
-    let idleFloat = 0.0;
+    // Precise 25.0 FPS playback timing (40.0 ms per frame)
+    const TARGET_FPS = 25;
+    const FRAME_INTERVAL_MS = 1000 / TARGET_FPS; // 40.0 ms
+
+    let lastFrameTime = performance.now();
+    let currentSpeechFrame = 0;
+    let currentIdleFrame = 0;
     let idleDir = 1;
-    let lastTime = performance.now();
 
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
-      const dt = Math.min((now - lastTime) / 1000, 0.1); // Clamp delta time to 100ms
-      lastTime = now;
 
       const isSpeaking = speakingRef.current;
       const isListening = listeningRef.current && !isSpeaking;
       const isThinking = thinkingRef.current && !isSpeaking;
 
-      let selectedIndex = 0;
+      // Lock frame advancement strictly to 25 frames per second
+      const elapsed = now - lastFrameTime;
+      if (elapsed >= FRAME_INTERVAL_MS) {
+        const steps = Math.floor(elapsed / FRAME_INTERVAL_MS);
+        lastFrameTime = now - (elapsed % FRAME_INTERVAL_MS);
 
-      if (isSpeaking) {
-        // When speaking: Animate naturally through speech-articulating frames (frames 30 to 96)
-        // at 24 FPS with smooth ping-pong cycling
-        const speechMin = 30;
-        const speechMax = totalFrames - 1; // 96
-        const fps = 24.0;
-
-        speakingFrameFloat += speechDirection * (fps * dt);
-        if (speakingFrameFloat >= speechMax) {
-          speakingFrameFloat = speechMax;
-          speechDirection = -1;
-        } else if (speakingFrameFloat <= speechMin) {
-          speakingFrameFloat = speechMin;
-          speechDirection = 1;
+        if (isSpeaking) {
+          // Advance forward smoothly at exact 25 FPS across all 97 frames
+          currentSpeechFrame = (currentSpeechFrame + steps) % totalFrames;
+        } else if (isListening) {
+          // Attentive listening loop across calm frames (0 to 24) at 25 FPS
+          currentIdleFrame += idleDir * steps;
+          if (currentIdleFrame >= 24) {
+            currentIdleFrame = 24;
+            idleDir = -1;
+          } else if (currentIdleFrame <= 0) {
+            currentIdleFrame = 0;
+            idleDir = 1;
+          }
+        } else if (isThinking) {
+          // Thoughtful contemplative loop across calm frames (0 to 18) at 25 FPS
+          currentIdleFrame += idleDir * steps;
+          if (currentIdleFrame >= 18) {
+            currentIdleFrame = 18;
+            idleDir = -1;
+          } else if (currentIdleFrame <= 0) {
+            currentIdleFrame = 0;
+            idleDir = 1;
+          }
+        } else {
+          // Calm resting presence across frames (0 to 12) at 25 FPS
+          currentIdleFrame += idleDir * steps;
+          if (currentIdleFrame >= 12) {
+            currentIdleFrame = 12;
+            idleDir = -1;
+          } else if (currentIdleFrame <= 0) {
+            currentIdleFrame = 0;
+            idleDir = 1;
+          }
         }
-
-        selectedIndex = Math.round(speakingFrameFloat);
-      } else if (isListening) {
-        // When listening: Attentive engagement loop across frames 0 to 35 at 14 FPS
-        // Subtle forward posture and micro-nods
-        const listenMin = 0;
-        const listenMax = Math.min(36, totalFrames - 1);
-        const fps = 14.0;
-
-        listeningFloat += listeningDir * (fps * dt);
-        if (listeningFloat >= listenMax) {
-          listeningFloat = listenMax;
-          listeningDir = -1;
-        } else if (listeningFloat <= listenMin) {
-          listeningFloat = listenMin;
-          listeningDir = 1;
-        }
-
-        selectedIndex = Math.round(listeningFloat);
-      } else if (isThinking) {
-        // When thinking / evaluating: Pensive frames in range 15 to 45 at 12 FPS
-        const thinkMin = 15;
-        const thinkMax = Math.min(48, totalFrames - 1);
-        const fps = 12.0;
-
-        listeningFloat += listeningDir * (fps * dt);
-        if (listeningFloat >= thinkMax) {
-          listeningFloat = thinkMax;
-          listeningDir = -1;
-        } else if (listeningFloat <= thinkMin) {
-          listeningFloat = thinkMin;
-          listeningDir = 1;
-        }
-
-        selectedIndex = Math.round(listeningFloat);
-      } else {
-        // Idle resting state: gentle human presence micro-motion (frames 0 to 18) at 10 FPS
-        const idleMin = 0;
-        const idleMax = Math.min(20, totalFrames - 1);
-        const fps = 10.0;
-
-        idleFloat += idleDir * (fps * dt);
-        if (idleFloat >= idleMax) {
-          idleFloat = idleMax;
-          idleDir = -1;
-        } else if (idleFloat <= idleMin) {
-          idleFloat = idleMin;
-          idleDir = 1;
-        }
-
-        selectedIndex = Math.round(idleFloat);
       }
 
-      // Safe bounds clamp
-      selectedIndex = Math.max(0, Math.min(totalFrames - 1, selectedIndex));
-      const activeImg = images[selectedIndex] || images[0];
+      const activeIndex = isSpeaking ? currentSpeechFrame : currentIdleFrame;
+      const clampedIndex = Math.max(0, Math.min(totalFrames - 1, activeIndex));
+      const activeImg = images[clampedIndex] || images[0];
 
-      // Draw the active video keyframe onto hardware canvas
+      // Single hardware draw call per frame (Smooth 25 FPS, zero jitter)
       if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
         ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
       }
@@ -258,7 +229,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
             </div>
           )}
           <span className="font-medium text-slate-200">
-            {speaking ? 'Interviewer Speaking' : listening ? 'Listening Attentively' : 'Ready for Answer'}
+            {speaking ? 'Interviewer Speaking (25 FPS)' : listening ? 'Listening Attentively' : 'Ready for Answer'}
           </span>
         </div>
       </div>
