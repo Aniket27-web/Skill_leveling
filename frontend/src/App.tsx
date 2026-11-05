@@ -216,44 +216,58 @@ const AppContent: React.FC = () => {
           </Link>
 
           {/* User & Rank Controls */}
-          <div className="flex items-center space-x-3">
-            {/* Dark / Light Mode Toggle */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Dark / Light Mode Cyber Toggle */}
             <button
               onClick={toggleTheme}
-              className="rounded-xl border border-purple-200 p-2 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950/60 transition shadow-sm"
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="group relative flex h-9 w-9 items-center justify-center rounded-2xl border border-purple-200/90 bg-white/85 p-0 text-purple-700 shadow-sm backdrop-blur-md transition-all duration-300 hover:border-purple-400 hover:bg-purple-50/90 hover:shadow-[0_0_14px_rgba(147,51,234,0.25)] active:scale-95 dark:border-purple-900/60 dark:bg-purple-950/40 dark:text-purple-300 dark:hover:border-purple-700 dark:hover:bg-purple-900/50 dark:hover:shadow-[0_0_16px_rgba(168,85,247,0.35)]"
+              title={isDark ? 'Switch to Light Arena Mode' : 'Switch to Dark Sovereign Mode'}
+              aria-label="Toggle Arena Theme"
             >
-              {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 opacity-0 blur-sm transition duration-300 group-hover:opacity-100 pointer-events-none" />
+              <div className="relative flex items-center justify-center">
+                {isDark ? (
+                  <Sun className="h-4 w-4 text-amber-300 transition-transform duration-500 group-hover:rotate-90 group-hover:scale-110 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                ) : (
+                  <Moon className="h-4 w-4 text-purple-700 transition-transform duration-500 group-hover:-rotate-12 group-hover:scale-110 drop-shadow-[0_0_6px_rgba(147,51,234,0.35)]" />
+                )}
+              </div>
             </button>
 
             {authLoading ? (
               <span className="text-xs text-slate-400 font-mono">Syncing mana...</span>
             ) : currentUser ? (
-              <div className="flex items-center space-x-2">
-                {/* Hunter Rank Badge Widget - Only shown when authenticated */}
-                <div className="hidden md:flex">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Hunter Rank Status Capsule */}
+                <div className="hidden sm:flex">
                   <HunterRankBadge level={hunterLevel} size="sm" showDetails={true} />
                 </div>
+
                 <Link
                   to="/"
-                  className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 dark:text-slate-300 dark:hover:bg-purple-950/50"
+                  className="rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 dark:text-slate-300 dark:hover:bg-purple-950/50 dark:hover:text-purple-200 transition"
                 >
                   Dungeon
                 </Link>
+
                 <Link
                   to="/settings"
-                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 dark:text-slate-300 dark:hover:bg-purple-950/50"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 hover:text-purple-700 dark:text-slate-300 dark:hover:bg-purple-950/50 dark:hover:text-purple-200 transition"
                 >
                   <Settings className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
                   Settings
                 </Link>
-                <div className="flex items-center space-x-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-900 border border-purple-200 dark:bg-purple-950/70 dark:border-purple-800 dark:text-purple-300 font-mono">
-                  <User className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                  <span className="font-semibold">{currentUser.name}</span>
+
+                {/* User Identity Pill */}
+                <div className="flex items-center space-x-1.5 rounded-2xl bg-purple-100/90 px-3 py-1 text-xs text-purple-900 border border-purple-200/90 dark:bg-purple-950/60 dark:border-purple-800/80 dark:text-purple-200 font-mono shadow-xs">
+                  <User className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                  <span className="font-bold">{currentUser.name}</span>
                 </div>
+
+                {/* Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-purple-950/60 dark:hover:text-purple-300 transition"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-purple-950/60 dark:hover:text-purple-200 transition"
                   title="Logout"
                 >
                   <LogOut className="h-4 w-4" />
