@@ -5,12 +5,6 @@
 
 ---
 
-## 📸 Screenshots Showcase
-
-> Place your custom screenshots in the [`screenshots/`](file:///d:/Edify_project/Skill_leveling/screenshots) directory. You can capture or refresh automated screenshots at any time using:
-> ```bash
-> python take_screenshots.py
-> ```
 
 ### 1. Hunter Association Portal & Resume Arsenal
 *Upload technical resumes, parse structured skills, configure dungeon difficulty, and review score trends over time.*
