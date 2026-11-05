@@ -703,207 +703,193 @@ export const InterviewPage: React.FC = () => {
   const totalQuestions = session.num_questions;
   const progressPercent = Math.min(100, Math.round(((orderIndex - 1) / totalQuestions) * 100));
 
-  if (session.interview_mode === 'video' && !hasJoinedVideoCall) {
+  if (session.interview_mode === 'video') {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-6 animate-fade-in">
-        {/* Hunter Status Bar */}
-        <HunterStatusBar />
-
-        {/* Top Header Card */}
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center rounded-3xl border border-purple-200/80 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-purple-900/60 dark:bg-[#0d071a]">
-          <div className="flex items-center gap-4">
-            <img
-              src={logoImg}
-              alt="Skill Leveling Emblem"
-              className="h-14 w-14 object-contain drop-shadow-[0_0_15px_rgba(147,51,234,0.5)] shrink-0 hidden sm:block"
-            />
+      <div className="fixed inset-0 z-50 flex flex-col h-screen w-screen bg-[#07040e] overflow-hidden select-none animate-fade-in text-white">
+        {/* Conference Header Bar */}
+        <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 border-b border-purple-900/40 bg-gradient-to-r from-purple-950/95 via-[#0d071a] to-purple-950/95 backdrop-blur-md shrink-0">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-[0.2em] font-mono text-purple-700 bg-purple-100 dark:bg-purple-950/80 dark:border dark:border-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-full">
-                  Gate Arena Calibration
-                </span>
-                <span className="text-xs font-mono text-purple-600 dark:text-purple-400">
-                  Question {orderIndex} of {totalQuestions} · {session.difficulty} Dungeon
-                </span>
-              </div>
-              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-                Video Interview Setup & Calibration
-              </h1>
-              <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-purple-300/80">
-                Calibrate your camera, microphone, and synthetic interviewer voice before entering the arena.
+              <p className="text-sm font-bold text-white flex items-center gap-2">
+                Marcus Vance <span className="text-slate-400 font-normal hidden sm:inline">· Senior Technical Partner</span>
+                <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.5 rounded">Q{orderIndex}/{totalQuestions}</span>
               </p>
+              <p className="text-xs text-purple-300/70 hidden sm:block">Live Technical Assessment · {session.difficulty.toUpperCase()} Dungeon</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-4 py-2.5 text-xs font-bold text-purple-700 dark:text-purple-300">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-            <span>Ready to Awaken</span>
-          </div>
-        </div>
-
-        {/* 2-Column Calibration Layout */}
-        <div className="grid items-stretch gap-6 lg:grid-cols-[1.25fr_1fr]">
-          {/* Camera Preview Card */}
-          <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl flex flex-col justify-between">
-            {cameraEnabled ? (
-              <video
-                ref={cameraRef}
-                autoPlay
-                muted
-                playsInline
-                aria-label="Camera preview"
-                className="h-full w-full scale-x-[-1] object-cover"
-              />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-purple-300/70 p-6 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-950/80 border border-purple-500/40 text-purple-300 shadow-[0_0_20px_rgba(147,51,234,0.3)]">
-                  <CameraOff className="h-9 w-9 text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-white">Camera Preview Disabled</p>
-                  <p className="text-xs text-purple-300/60 mt-0.5">Toggle camera below to inspect your video feed.</p>
-                </div>
+          <div className="flex items-center gap-4">
+            {session.duration_minutes && (
+              <div className="hidden sm:block">
+                <CountdownTimer
+                  secondsRemaining={durationCountdown.secondsRemaining}
+                  totalSeconds={durationCountdown.totalSeconds}
+                  percentRemaining={durationCountdown.percentRemaining}
+                  colorState={durationCountdown.colorState}
+                  formattedTime={durationCountdown.formattedTime}
+                />
               </div>
             )}
-
-            {/* Top Tag */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 rounded-full bg-black/60 border border-purple-500/30 px-3.5 py-1.5 text-xs text-white backdrop-blur-md shadow-lg">
-              <span className={`h-2 w-2 rounded-full ${cameraEnabled ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-slate-500'}`} />
-              <span className="font-mono">{cameraEnabled ? 'Live Video Active' : 'Camera Standby'}</span>
+            <div className="flex items-center gap-2 text-xs font-mono text-purple-200">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              <span className="hidden sm:inline">Live Call Connected</span>
             </div>
+          </div>
+        </div>
 
-            {/* Bottom Tag */}
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl bg-black/60 border border-white/10 px-3 py-1.5 text-xs text-white backdrop-blur-md">
-              <span className="font-semibold text-purple-200">{candidateFirstName || 'Candidate'}</span>
-              <span className="text-[11px] text-white/50 font-mono">· 1080p Stream</span>
+        {/* Main Stage: 60 FPS Photorealistic Video Stream */}
+        <div className="relative w-full overflow-hidden bg-[#090a0f] flex-1 h-full">
+          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-900" aria-label="Loading interviewer" />}>
+            <AvatarStage className="h-full w-full rounded-none" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
+          </Suspense>
+
+          {/* Line-by-Line Floating Closed-Caption Pill (Never overrides Marcus Vance) */}
+          {(isInterviewerSpeaking
+            ? (activeSubtitleLine || spokenText || currentQ?.text)
+            : isListening
+            ? ((interimTranscript || answerText).trim() ? `🗣️ You: ${(interimTranscript || answerText).trim().split(/(?<=[.?!])\s+/).pop()?.trim()}` : 'Listening to your response…')
+            : null) && (
+            <div aria-live="polite" className="pointer-events-none absolute bottom-4 inset-x-0 z-30 flex justify-center px-4 sm:px-8">
+              <div className="inline-flex max-w-2xl items-center gap-2.5 rounded-full bg-black/85 px-6 py-2.5 text-xs sm:text-sm font-medium text-slate-100 shadow-2xl border border-white/15 backdrop-blur-xl text-center leading-relaxed animate-fade-in transition-all duration-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="line-clamp-2">
+                  {isInterviewerSpeaking
+                    ? (activeSubtitleLine || spokenText || currentQ?.text)
+                    : isListening
+                    ? ((interimTranscript || answerText).trim() ? `🗣️ You: ${(interimTranscript || answerText).trim().split(/(?<=[.?!])\s+/).pop()?.trim()}` : 'Listening to your response…')
+                    : ''}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Candidate PiP Webcam Preview */}
+          <div className={`absolute right-4 top-4 h-28 w-40 sm:h-38 sm:w-56 overflow-hidden rounded-2xl border bg-[#1a1b1f] shadow-2xl transition-all z-20 ${isListening ? 'border-emerald-400 ring-2 ring-emerald-400/80 shadow-[0_0_24px_rgba(52,211,153,0.4)]' : 'border-white/20'}`}>
+            {cameraEnabled ? (
+              <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-base font-bold shadow">
+                  {candidateFirstName ? candidateFirstName[0].toUpperCase() : 'Y'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">Camera off</span>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+              {microphoneEnabled ? <Mic className="h-3 w-3 text-emerald-400" /> : <MicOff className="h-3 w-3 text-rose-400" />}
+              <span>{candidateFirstName || 'You'}</span>
             </div>
           </div>
 
-          {/* Device Controls & Voice Settings Card */}
-          <section className="rounded-3xl border border-purple-200/80 bg-white/80 p-6 sm:p-7 shadow-xl backdrop-blur-md dark:border-purple-900/60 dark:bg-[#0d071a] flex flex-col justify-between space-y-5">
-            <div className="space-y-5">
-              <div className="border-b border-purple-100 dark:border-purple-900/50 pb-3">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  Hardware & Audio Check
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-purple-300/70 mt-0.5">
-                  Ensure your devices are responsive before entering the video dungeon.
-                </p>
+          {/* Analyzing / Evaluating Spinner Overlay */}
+          {isSubmitting && (
+            <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm text-white p-6 animate-fade-in">
+              <div className="p-4 rounded-full bg-purple-900/60 border border-purple-500/50 mb-3 shadow-[0_0_25px_rgba(147,51,234,0.5)]">
+                <Sparkles className="h-8 w-8 text-purple-300 animate-spin" />
               </div>
-
-              {/* Mic & Camera Toggles */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={toggleMicrophone}
-                  aria-pressed={microphoneEnabled}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl p-4 text-xs font-bold transition-all shadow-sm ${
-                    microphoneEnabled
-                      ? 'border border-purple-400 bg-purple-50 text-purple-900 dark:border-purple-600 dark:bg-purple-950/70 dark:text-purple-200 shadow-[0_0_15px_rgba(147,51,234,0.15)]'
-                      : 'border border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
-                  }`}
-                >
-                  <div className={`p-2.5 rounded-xl ${microphoneEnabled ? 'bg-purple-200 dark:bg-purple-900/80 text-purple-700 dark:text-purple-200' : 'bg-rose-200 dark:bg-rose-900/80 text-rose-700 dark:text-rose-200'}`}>
-                    {microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-                  </div>
-                  <span>{microphoneEnabled ? 'Microphone Active' : 'Microphone Muted'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={toggleCamera}
-                  aria-pressed={cameraEnabled}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl p-4 text-xs font-bold transition-all shadow-sm ${
-                    cameraEnabled
-                      ? 'border border-purple-400 bg-purple-50 text-purple-900 dark:border-purple-600 dark:bg-purple-950/70 dark:text-purple-200 shadow-[0_0_15px_rgba(147,51,234,0.15)]'
-                      : 'border border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
-                  }`}
-                >
-                  <div className={`p-2.5 rounded-xl ${cameraEnabled ? 'bg-purple-200 dark:bg-purple-900/80 text-purple-700 dark:text-purple-200' : 'bg-rose-200 dark:bg-rose-900/80 text-rose-700 dark:text-rose-200'}`}>
-                    {cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}
-                  </div>
-                  <span>{cameraEnabled ? 'Camera Active' : 'Camera Off'}</span>
-                </button>
-              </div>
-
-              {/* Voice Selection */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="interviewer-voice" className="block text-xs font-bold text-slate-800 dark:text-purple-200">
-                    Interviewer Voice Synthesis
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => speakText('Hello, I will be conducting your technical interview today. Take your time and answer naturally.')}
-                    disabled={!speechVoices.length}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-40 transition"
-                  >
-                    <Volume2 className="h-3.5 w-3.5" />
-                    Preview Voice
-                  </button>
-                </div>
-                <select
-                  id="interviewer-voice"
-                  value={selectedVoiceName}
-                  onChange={(event) => chooseVoice(event.target.value)}
-                  disabled={!speechVoices.length}
-                  className="w-full rounded-xl border border-slate-200 dark:border-purple-800 bg-white dark:bg-[#140b27] px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-purple-100 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/50 disabled:opacity-60 transition"
-                >
-                  {speechVoices.some((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in'))
-                    ? speechVoices.filter((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in')).map((voice) => (
-                        <option key={`${voice.name}-${voice.lang}`} value={voice.name}>
-                          {voice.name} · {voice.lang}
-                        </option>
-                      ))
-                    : <option value="">No US/UK English voice installed</option>}
-                </select>
-                <p className="text-[11px] text-slate-400 dark:text-purple-400/60 leading-relaxed">
-                  Natural English speech synthesis voice for your photorealistic interviewer.
-                </p>
-              </div>
-
-              {/* Notifications */}
-              {voiceToast && (
-                <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
-                  {voiceToast}
-                </div>
-              )}
-              {!isSpeechSupported && (
-                <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40 p-3 text-xs text-rose-900 dark:text-rose-200">
-                  Voice answers require Web Speech API. Open this interview in Google Chrome or Microsoft Edge.
-                </div>
-              )}
-            </div>
-
-            {/* Enter Arena CTA */}
-            <div className="pt-2 space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setVoiceToast(null);
-                  setHasJoinedVideoCall(true);
-                }}
-                disabled={!currentQ}
-                className="w-full rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 hover:from-purple-600 hover:to-indigo-500 text-white font-bold text-sm sm:text-base py-3.5 shadow-[0_0_20px_rgba(147,51,234,0.45)] transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Enter Video Interview Arena</span>
-              </button>
-              <p className="text-center text-[11px] text-slate-400 dark:text-purple-400/60 font-mono">
-                Microphone is active for live voice transcription.
+              <h3 className="text-lg font-bold text-white">Analyzing your answer...</h3>
+              <p className="text-xs text-purple-300/80 mt-1 max-w-sm text-center">
+                System AI is measuring technical depth, relevance, accuracy, and clarity.
               </p>
             </div>
-          </section>
+          )}
         </div>
+
+        {/* Executive Conference Controls Dock */}
+        <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 sm:px-8 border-t border-purple-900/40 bg-gradient-to-r from-purple-950/95 via-[#0d071a] to-purple-950/95 backdrop-blur-xl">
+          {/* Real-time Status & Audio Waveform */}
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+            <span className={`h-2.5 w-2.5 rounded-full ${isListening ? 'bg-blue-400 animate-pulse' : isInterviewerSpeaking ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
+            <span className="text-xs font-mono text-purple-200">
+              {isListening ? 'Listening to your response…' : isInterviewerSpeaking ? 'Marcus Vance is speaking…' : isSubmitting ? 'Evaluating response…' : 'Microphone ready'}
+            </span>
+            {isListening && <div className="w-24 sm:w-32"><AudioWaveform active barCount={16} /></div>}
+          </div>
+
+          {/* Conference Action Buttons */}
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <button
+              type="button"
+              onClick={toggleMicrophone}
+              aria-pressed={microphoneEnabled}
+              title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
+              className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4e5357]' : 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
+            >
+              {microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleCamera}
+              title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'}
+              className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${cameraEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4e5357]' : 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
+            >
+              {cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)}
+              title="Repeat question aloud"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#3c4043] text-white transition-all duration-200 hover:bg-[#4e5357]"
+            >
+              <Volume2 className="h-5 w-5" />
+            </button>
+
+            {!justEvaluatedFeedback && (
+              <button
+                type="button"
+                onClick={() => handleSubmitAnswer(false)}
+                disabled={!answerText.trim() || isSubmitting}
+                className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-fuchsia-600 px-5 text-xs sm:text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" /> Submit Answer
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleEndVideoCall}
+              disabled={completeSessionMutation.isPending}
+              title="End video call"
+              className="flex h-11 items-center justify-center rounded-full bg-rose-600 px-4 text-white hover:bg-rose-700 transition disabled:opacity-50"
+            >
+              <PhoneOff className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Feedback Modal in Full Screen Mode */}
+        {justEvaluatedFeedback && !isSubmitting && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fade-in">
+            <div className="w-full max-w-2xl my-auto">
+              <FeedbackCard
+                evalStatus={justEvaluatedFeedback.eval_status}
+                score={justEvaluatedFeedback.score}
+                dimensions={justEvaluatedFeedback.dimensions}
+                strengths={justEvaluatedFeedback.strengths}
+                improvements={justEvaluatedFeedback.improvements}
+                missedPoints={justEvaluatedFeedback.missed_points}
+                idealOutline={justEvaluatedFeedback.ideal_outline}
+                isLastQuestion={isLastQuestion}
+                isRetrying={retryEvalMutation.isPending}
+                isCompleting={completeSessionMutation.isPending}
+                deltaInfo={latestDelta}
+                onNextOrFinish={handleNextOrFinish}
+                onRetryEval={handleRetryEval}
+                onContinueAnyway={handleNextOrFinish}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
+    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
       {/* Hunter Status Bar (Shown in Text/Audio modes only) */}
-      {session.interview_mode !== 'video' && <HunterStatusBar />}
+      <HunterStatusBar />
 
       {/* Voice / Permission Toast Notification */}
       {voiceToast && (
@@ -925,8 +911,7 @@ export const InterviewPage: React.FC = () => {
       )}
 
       {/* Top Header: Progress and Timer (Shown in Text/Audio modes only) */}
-      {session.interview_mode !== 'video' && (
-        <div className="space-y-3 rounded-2xl border border-purple-200 bg-white p-5 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
+      <div className="space-y-3 rounded-2xl border border-purple-200 bg-white p-5 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-3">
               <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300">
@@ -973,12 +958,11 @@ export const InterviewPage: React.FC = () => {
             />
           </div>
         </div>
-      )}
 
       {isDurationExpired && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Your dungeon time is up. We are finalizing your hunter debrief.</div>}
 
       {/* Question Card */}
-      {session.interview_mode !== 'video' && <div className="space-y-4 rounded-2xl border border-purple-200 bg-white p-6 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
+      <div className="space-y-4 rounded-2xl border border-purple-200 bg-white p-6 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start space-x-3">
             <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center flex-shrink-0 font-bold text-sm font-mono border border-purple-200 dark:border-purple-800">Q{orderIndex}</div>
@@ -986,7 +970,7 @@ export const InterviewPage: React.FC = () => {
           </div>
           {session.interview_mode !== 'text' && <button type="button" onClick={() => speakQuestion(false)} aria-label="Read question aloud" className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-100 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"><Volume2 className="h-4 w-4" /> Play question</button>}
         </div>
-      </div>}
+      </div>
 
       {session.interview_mode === 'audio' && <section className="rounded-2xl border border-purple-200 dark:border-purple-900/60 bg-white dark:bg-[#0d071a] p-5 shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1046,67 +1030,7 @@ export const InterviewPage: React.FC = () => {
         </div>
       </section>}
 
-      {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl" aria-label="Video interview room">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 border-b border-purple-900/40 bg-gradient-to-r from-purple-950/80 via-[#0d071a] to-purple-950/80 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
-            <div>
-              <p className="text-sm font-bold text-white flex items-center gap-2">Personal AI Interviewer <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.2 rounded">Gate Arena</span></p>
-              <p className="text-xs text-purple-300/70">Live interactive video interview · Question {orderIndex} of {totalQuestions}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-mono text-purple-200"><span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" /> Live Call Connected</div>
-        </div>
-        <div className="relative mx-auto h-[min(64vh,680px)] min-h-[380px] max-h-[680px] overflow-hidden bg-[#111214] sm:min-h-[460px]">
-          <Suspense fallback={<div className="h-full min-h-[380px] animate-pulse bg-slate-900 sm:min-h-[460px]" aria-label="Loading interviewer" />}>
-            <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
-          </Suspense>
-
-
-          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
-            <p className="max-w-3xl rounded-xl bg-black/60 px-5 py-3 text-base font-medium leading-relaxed shadow-xl sm:text-lg border border-white/10 backdrop-blur-md">
-              {isInterviewerSpeaking
-                ? (spokenText || interviewerResponse || currentQ?.text)
-                : isListening
-                ? `🗣️ You: ${interimTranscript || answerText || 'Listening to your response...'}`
-                : (currentQ?.text || 'Preparing next challenge…')}
-            </p>
-          </div>
-          <div className={`absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border bg-[#202124] shadow-2xl transition-all sm:right-5 sm:top-5 sm:h-40 sm:w-56 ${isListening ? 'border-emerald-400 ring-2 ring-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.35)]' : 'border-white/20'}`}>
-            {cameraEnabled ? (
-              <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" />
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-lg font-bold shadow">
-                  {candidateFirstName ? candidateFirstName[0].toUpperCase() : 'Y'}
-                </span>
-                <span className="text-[11px] text-slate-400 font-medium">Camera off</span>
-              </div>
-            )}
-            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-              {microphoneEnabled ? <Mic className="h-3 w-3 text-emerald-400" /> : <MicOff className="h-3 w-3 text-rose-400" />}
-              <span>{candidateFirstName || 'You'}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-3 px-3 py-4 sm:gap-5 sm:px-6">
-          <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} aria-label={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</button>
-          <button type="button" onClick={toggleCamera} aria-label={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${cameraEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}</button>
-          <button type="button" onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)} aria-label="Repeat question aloud" title="Repeat question" className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3c4043] text-white transition hover:bg-[#4b4f52]"><Volume2 className="h-5 w-5" /></button>
-          <button type="button" onClick={handleEndVideoCall} disabled={completeSessionMutation.isPending} aria-label="End interview" title="End interview" className="flex h-12 min-w-16 items-center justify-center rounded-full bg-rose-600 px-5 text-white transition hover:bg-rose-700 disabled:opacity-50"><PhoneOff className="h-5 w-5" /></button>
-          {!justEvaluatedFeedback && <button type="button" onClick={() => handleSubmitAnswer(false)} disabled={!answerText.trim() || isSubmitting || !microphoneEnabled} className="flex h-12 items-center gap-2 rounded-full bg-[#8ab4f8] px-5 text-sm font-semibold text-[#202124] hover:bg-[#aecbfa] disabled:cursor-not-allowed disabled:opacity-40"><Send className="h-4 w-4" /> Submit answer</button>}
-          {isListening && <div className="basis-full"><AudioWaveform active barCount={24} /></div>}
-          <p className="basis-full text-center text-xs text-white/55" aria-live="polite">{isListening ? 'Listening to your answer…' : isInterviewerSpeaking ? 'Interviewer is speaking…' : justEvaluatedFeedback ? 'Answer submitted' : 'Your spoken answer is being transcribed for feedback'}</p>
-        </div>
-      </section>}
-
-      {session.interview_mode === 'video' && networkError && (
-        <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-rose-300/30 bg-rose-950/70 p-4 text-sm text-rose-100">
-          <span>{networkError} Your spoken answer is still available to retry.</span>
-          <button type="button" onClick={() => handleSubmitAnswer(false)} disabled={isSubmitting || !answerText.trim()} className="shrink-0 rounded-lg bg-rose-600 px-3 py-2 font-semibold text-white hover:bg-rose-500 disabled:opacity-50">Retry</button>
-        </div>
-      )}
-
+      
       {/* Evaluating Skeleton / Loading Banner */}
       {isSubmitting && (
         <div
@@ -1149,7 +1073,7 @@ export const InterviewPage: React.FC = () => {
       )}
 
       {/* Answer Input Section (Hidden when feedback is visible) */}
-      {session.interview_mode !== 'video' && !justEvaluatedFeedback && !isSubmitting && (
+      {!justEvaluatedFeedback && !isSubmitting && (
         <div className="bg-white dark:bg-[#0d071a] p-6 rounded-2xl border border-purple-200 dark:border-purple-900/60 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <label htmlFor="answer-input" className="text-sm font-bold text-slate-800 dark:text-purple-200">
