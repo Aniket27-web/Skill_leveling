@@ -87,6 +87,17 @@ export const InterviewPage: React.FC = () => {
   const currentQ = session?.current_question;
   const currentQId = currentQ?.id;
 
+  // Active question details & indexing (handles both 0-indexed database and 1-indexed fixtures)
+  const isZeroIndexed = useMemo(() => {
+    if (!session?.questions?.length) return false;
+    return session.questions[0].order_index === 0;
+  }, [session?.questions]);
+
+  const orderIndex = useMemo(() => {
+    if (!currentQ) return 1;
+    return isZeroIndexed ? currentQ.order_index + 1 : currentQ.order_index;
+  }, [currentQ, isZeroIndexed]);
+
   // Track if we are waiting for server to prepare the next question
   useEffect(() => {
     if (session?.status === 'in_progress' && !currentQ) {
@@ -127,6 +138,12 @@ export const InterviewPage: React.FC = () => {
     }
     return idempotencyKeysRef.current[qid];
   };
+
+  // Reset introductory greeting flag when switching sessions
+  useEffect(() => {
+    hasDeliveredIntroRef.current = false;
+    lastSpokenQuestionIdRef.current = null;
+  }, [sessionId]);
 
   // 1. Per-question draft in React state and mirrored to sessionStorage
   useEffect(() => {
@@ -396,16 +413,15 @@ export const InterviewPage: React.FC = () => {
       return;
     }
 
-    const order = currentQ?.order_index ?? 1;
     let spokenSentence = currentQ.text;
 
-    if ((order === 1 && !hasDeliveredIntroRef.current) || forceFullIntro) {
+    if (!hasDeliveredIntroRef.current || forceFullIntro || orderIndex === 1) {
       hasDeliveredIntroRef.current = true;
       const greeting = getTimeBasedGreeting();
       const namePart = candidateFirstName ? ` ${candidateFirstName}` : '';
       spokenSentence = `Hello${namePart}, ${greeting}! Welcome to your technical interview. I'm Marcus, and I will be conducting your session today. We will walk through questions based on your technical background and experience. Take your time, think through your solutions out loud, and speak naturally whenever you're ready. To begin, here is our first question: ${currentQ.text}`;
-    } else if (order > 1) {
-      spokenSentence = `Thank you. Let's move on to question ${order}: ${currentQ.text}`;
+    } else {
+      spokenSentence = `Thank you. Let's move on to question ${orderIndex}: ${currentQ.text}`;
     }
 
     if (currentQ?.id) {
@@ -593,8 +609,8 @@ export const InterviewPage: React.FC = () => {
   // Next Question / Complete Session action
   const isLastQuestion = useMemo(() => {
     if (!session || !currentQ) return false;
-    return currentQ.order_index >= session.num_questions;
-  }, [session, currentQ]);
+    return orderIndex >= session.num_questions;
+  }, [session, currentQ, orderIndex]);
 
   const handleNextOrFinish = async () => {
     if (!sessionId) return;
@@ -680,7 +696,6 @@ export const InterviewPage: React.FC = () => {
   }
 
   // Active question details
-  const orderIndex = currentQ?.order_index ?? 1;
   const totalQuestions = session.num_questions;
   const progressPercent = Math.min(100, Math.round(((orderIndex - 1) / totalQuestions) * 100));
 
