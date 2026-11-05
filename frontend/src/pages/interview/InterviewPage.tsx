@@ -701,42 +701,198 @@ export const InterviewPage: React.FC = () => {
 
   if (session.interview_mode === 'video' && !hasJoinedVideoCall) {
     return (
-      <main className="min-h-[calc(100vh-4rem)] bg-[#202124] px-4 py-8 text-white sm:px-8">
-        <div className="mx-auto max-w-5xl">
-          <header className="mb-8 flex items-center justify-between">
-            <div><p className="text-lg font-semibold">Interview Coach</p><p className="text-sm text-white/60">Video interview · Question {orderIndex} of {totalQuestions}</p></div>
-            <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-white/70">Ready to join?</span>
-          </header>
-          <div className="grid items-center gap-8 lg:grid-cols-[1.5fr_1fr]">
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-[#111214] shadow-2xl ring-1 ring-white/10">
-              {cameraEnabled
-                ? <video ref={cameraRef} autoPlay muted playsInline aria-label="Camera preview" className="h-full w-full scale-x-[-1] object-cover" />
-                : <div className="flex h-full flex-col items-center justify-center gap-3 text-white/65"><span className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-500 text-2xl font-semibold">You</span><span>Camera is off</span></div>}
-              <div className="absolute bottom-4 left-4 rounded-md bg-black/45 px-3 py-1.5 text-sm">Your camera preview</div>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-6 animate-fade-in">
+        {/* Hunter Status Bar */}
+        <HunterStatusBar />
+
+        {/* Top Header Card */}
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center rounded-3xl border border-purple-200/80 bg-white/80 p-6 shadow-sm backdrop-blur dark:border-purple-900/60 dark:bg-[#0d071a]">
+          <div className="flex items-center gap-4">
+            <img
+              src={logoImg}
+              alt="Skill Leveling Emblem"
+              className="h-14 w-14 object-contain drop-shadow-[0_0_15px_rgba(147,51,234,0.5)] shrink-0 hidden sm:block"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-[0.2em] font-mono text-purple-700 bg-purple-100 dark:bg-purple-950/80 dark:border dark:border-purple-800 dark:text-purple-300 px-2.5 py-0.5 rounded-full">
+                  Gate Arena Calibration
+                </span>
+                <span className="text-xs font-mono text-purple-600 dark:text-purple-400">
+                  Question {orderIndex} of {totalQuestions} · {session.difficulty} Dungeon
+                </span>
+              </div>
+              <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+                Video Interview Setup & Calibration
+              </h1>
+              <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-purple-300/80">
+                Calibrate your camera, microphone, and synthetic interviewer voice before entering the arena.
+              </p>
             </div>
-            <section className="space-y-5">
-              <div><h1 className="text-2xl font-semibold">Check your setup</h1><p className="mt-2 text-sm leading-6 text-white/65">Turn on your camera and microphone, then join when you’re ready. Your answers will be captured by voice.</p></div>
-              <div className="flex gap-3">
-                <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium ${microphoneEnabled ? 'bg-[#3c4043] hover:bg-[#4b4f52]' : 'bg-rose-600 hover:bg-rose-700'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}{microphoneEnabled ? 'Microphone on' : 'Microphone off'}</button>
-                <button type="button" onClick={toggleCamera} aria-pressed={cameraEnabled} className={`flex h-14 flex-1 items-center justify-center gap-2 rounded-full text-sm font-medium ${cameraEnabled ? 'bg-[#3c4043] hover:bg-[#4b4f52]' : 'bg-rose-600 hover:bg-rose-700'}`}>{cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}{cameraEnabled ? 'Camera on' : 'Camera off'}</button>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between"><label htmlFor="interviewer-voice" className="block text-xs font-medium text-white/65">Interviewer voice</label><button type="button" onClick={() => speakText('Hello, I will be conducting your interview today. Take your time and answer in your own words.')} disabled={!speechVoices.length} className="text-xs font-medium text-[#aecbfa] hover:text-white disabled:opacity-40">Preview voice</button></div>
-                <select id="interviewer-voice" value={selectedVoiceName} onChange={(event) => chooseVoice(event.target.value)} disabled={!speechVoices.length} className="w-full rounded-xl border border-white/15 bg-[#303134] px-3 py-3 text-sm text-white outline-none focus:border-[#8ab4f8] disabled:opacity-60">
-                  {speechVoices.some((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in'))
-                    ? speechVoices.filter((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in')).map((voice) => <option key={`${voice.name}-${voice.lang}`} value={voice.name}>{voice.name} · {voice.lang}</option>)
-                    : <option value="">No US/UK English voice installed</option>}
-                </select>
-                <p className="text-xs text-white/45">Choose an English voice from your browser. US and UK voices are preferred; available voice quality depends on your browser and operating system.</p>
-              </div>
-              {voiceToast && <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-100">{voiceToast}</p>}
-              {!isSpeechSupported && <p role="alert" className="rounded-xl border border-rose-400/30 bg-rose-400/10 p-3 text-sm text-rose-100">Voice answers need speech recognition. Open this interview in Chrome or Edge to join.</p>}
-              <button type="button" onClick={() => { setVoiceToast(null); setHasJoinedVideoCall(true); }} disabled={!mediaSetupComplete || !microphoneEnabled || !isSpeechSupported || !currentQ} className="w-full rounded-full bg-[#8ab4f8] px-6 py-3.5 font-semibold text-[#202124] transition hover:bg-[#aecbfa] disabled:cursor-not-allowed disabled:opacity-40">{mediaSetupComplete ? 'Join interview' : 'Checking camera and microphone…'}</button>
-              <p className="text-center text-xs text-white/45">Microphone is required for voice-only interview answers.</p>
-            </section>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/60 px-4 py-2.5 text-xs font-bold text-purple-700 dark:text-purple-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+            <span>Ready to Awaken</span>
           </div>
         </div>
-      </main>
+
+        {/* 2-Column Calibration Layout */}
+        <div className="grid items-stretch gap-6 lg:grid-cols-[1.25fr_1fr]">
+          {/* Camera Preview Card */}
+          <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl flex flex-col justify-between">
+            {cameraEnabled ? (
+              <video
+                ref={cameraRef}
+                autoPlay
+                muted
+                playsInline
+                aria-label="Camera preview"
+                className="h-full w-full scale-x-[-1] object-cover"
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-purple-300/70 p-6 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-950/80 border border-purple-500/40 text-purple-300 shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+                  <CameraOff className="h-9 w-9 text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-white">Camera Preview Disabled</p>
+                  <p className="text-xs text-purple-300/60 mt-0.5">Toggle camera below to inspect your video feed.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Top Tag */}
+            <div className="absolute top-4 left-4 flex items-center gap-2 rounded-full bg-black/60 border border-purple-500/30 px-3.5 py-1.5 text-xs text-white backdrop-blur-md shadow-lg">
+              <span className={`h-2 w-2 rounded-full ${cameraEnabled ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-slate-500'}`} />
+              <span className="font-mono">{cameraEnabled ? 'Live Video Active' : 'Camera Standby'}</span>
+            </div>
+
+            {/* Bottom Tag */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 rounded-xl bg-black/60 border border-white/10 px-3 py-1.5 text-xs text-white backdrop-blur-md">
+              <span className="font-semibold text-purple-200">{candidateFirstName || 'Candidate'}</span>
+              <span className="text-[11px] text-white/50 font-mono">· 1080p Stream</span>
+            </div>
+          </div>
+
+          {/* Device Controls & Voice Settings Card */}
+          <section className="rounded-3xl border border-purple-200/80 bg-white/80 p-6 sm:p-7 shadow-xl backdrop-blur-md dark:border-purple-900/60 dark:bg-[#0d071a] flex flex-col justify-between space-y-5">
+            <div className="space-y-5">
+              <div className="border-b border-purple-100 dark:border-purple-900/50 pb-3">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  Hardware & Audio Check
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-purple-300/70 mt-0.5">
+                  Ensure your devices are responsive before entering the video dungeon.
+                </p>
+              </div>
+
+              {/* Mic & Camera Toggles */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={toggleMicrophone}
+                  aria-pressed={microphoneEnabled}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl p-4 text-xs font-bold transition-all shadow-sm ${
+                    microphoneEnabled
+                      ? 'border border-purple-400 bg-purple-50 text-purple-900 dark:border-purple-600 dark:bg-purple-950/70 dark:text-purple-200 shadow-[0_0_15px_rgba(147,51,234,0.15)]'
+                      : 'border border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-xl ${microphoneEnabled ? 'bg-purple-200 dark:bg-purple-900/80 text-purple-700 dark:text-purple-200' : 'bg-rose-200 dark:bg-rose-900/80 text-rose-700 dark:text-rose-200'}`}>
+                    {microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                  </div>
+                  <span>{microphoneEnabled ? 'Microphone Active' : 'Microphone Muted'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  aria-pressed={cameraEnabled}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl p-4 text-xs font-bold transition-all shadow-sm ${
+                    cameraEnabled
+                      ? 'border border-purple-400 bg-purple-50 text-purple-900 dark:border-purple-600 dark:bg-purple-950/70 dark:text-purple-200 shadow-[0_0_15px_rgba(147,51,234,0.15)]'
+                      : 'border border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-xl ${cameraEnabled ? 'bg-purple-200 dark:bg-purple-900/80 text-purple-700 dark:text-purple-200' : 'bg-rose-200 dark:bg-rose-900/80 text-rose-700 dark:text-rose-200'}`}>
+                    {cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}
+                  </div>
+                  <span>{cameraEnabled ? 'Camera Active' : 'Camera Off'}</span>
+                </button>
+              </div>
+
+              {/* Voice Selection */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="interviewer-voice" className="block text-xs font-bold text-slate-800 dark:text-purple-200">
+                    Interviewer Voice Synthesis
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => speakText('Hello, I will be conducting your technical interview today. Take your time and answer naturally.')}
+                    disabled={!speechVoices.length}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-40 transition"
+                  >
+                    <Volume2 className="h-3.5 w-3.5" />
+                    Preview Voice
+                  </button>
+                </div>
+                <select
+                  id="interviewer-voice"
+                  value={selectedVoiceName}
+                  onChange={(event) => chooseVoice(event.target.value)}
+                  disabled={!speechVoices.length}
+                  className="w-full rounded-xl border border-slate-200 dark:border-purple-800 bg-white dark:bg-[#140b27] px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-purple-100 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/50 disabled:opacity-60 transition"
+                >
+                  {speechVoices.some((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in'))
+                    ? speechVoices.filter((voice) => voice.lang.toLowerCase().startsWith('en') && !voice.lang.toLowerCase().includes('en-in')).map((voice) => (
+                        <option key={`${voice.name}-${voice.lang}`} value={voice.name}>
+                          {voice.name} · {voice.lang}
+                        </option>
+                      ))
+                    : <option value="">No US/UK English voice installed</option>}
+                </select>
+                <p className="text-[11px] text-slate-400 dark:text-purple-400/60 leading-relaxed">
+                  Natural English speech synthesis voice for your photorealistic interviewer.
+                </p>
+              </div>
+
+              {/* Notifications */}
+              {voiceToast && (
+                <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  {voiceToast}
+                </div>
+              )}
+              {!isSpeechSupported && (
+                <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/40 p-3 text-xs text-rose-900 dark:text-rose-200">
+                  Voice answers require Web Speech API. Open this interview in Google Chrome or Microsoft Edge.
+                </div>
+              )}
+            </div>
+
+            {/* Enter Arena CTA */}
+            <div className="pt-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setVoiceToast(null);
+                  setHasJoinedVideoCall(true);
+                }}
+                disabled={!mediaSetupComplete || !microphoneEnabled || !isSpeechSupported || !currentQ}
+                className="w-full rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 hover:from-purple-600 hover:to-indigo-500 text-white font-bold text-sm sm:text-base py-3.5 shadow-[0_0_20px_rgba(147,51,234,0.45)] transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{mediaSetupComplete ? 'Enter Video Interview Arena' : 'Checking Camera & Microphone…'}</span>
+              </button>
+              <p className="text-center text-[11px] text-slate-400 dark:text-purple-400/60 font-mono">
+                Microphone is active for live voice transcription.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
     );
   }
 

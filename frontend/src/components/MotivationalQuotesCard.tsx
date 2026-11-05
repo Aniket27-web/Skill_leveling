@@ -157,3 +157,4 @@ export const MotivationalQuotesCard: React.FC = () => {
     </div>
   );
 };
+
