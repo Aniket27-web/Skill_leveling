@@ -132,6 +132,50 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const [demoLoading, setDemoLoading] = useState<boolean>(false);
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true);
+    setLoginError(null);
+    try {
+      let res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: 'demo@example.com', password: 'password123' }),
+      });
+      if (!res.ok) {
+        // In case the DB was fresh, auto-register demo account
+        await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: 'Demo Hunter', email: 'demo@example.com', password: 'password123' }),
+        });
+        res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email: 'demo@example.com', password: 'password123' }),
+        });
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || 'Invalid demo credentials');
+      }
+      const data = await res.json();
+      setCurrentUser(data);
+      setShowLoginModal(false);
+      setIsRegister(false);
+      queryClient.invalidateQueries();
+    } catch (err: any) {
+      setLoginError(err?.message || 'Demo login failed');
+      setShowLoginModal(true);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
@@ -306,23 +350,23 @@ const AppContent: React.FC = () => {
                             Awaken Hunter · Start Raid
                           </button>
                           <button
-                            onClick={() => {
-                              setEmail('demo@example.com');
-                              setPassword('hunter123');
-                              setIsRegister(false);
-                              setShowLoginModal(true);
-                            }}
-                            className="inline-flex items-center gap-2 rounded-xl border border-purple-300 bg-white/90 px-6 py-3.5 font-mono text-sm font-bold text-purple-700 shadow-sm hover:bg-purple-50 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300 dark:hover:bg-purple-900/60 transition"
+                            onClick={handleDemoLogin}
+                            disabled={demoLoading}
+                            className="inline-flex items-center gap-2 rounded-xl border border-purple-300 bg-white/90 px-6 py-3.5 font-mono text-sm font-bold text-purple-700 shadow-sm hover:bg-purple-50 dark:border-purple-800 dark:bg-purple-950/60 dark:text-purple-300 dark:hover:bg-purple-900/60 transition disabled:opacity-60"
                           >
-                            <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                            1-Click Evaluator Demo
+                            {demoLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                            ) : (
+                              <Zap className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            )}
+                            {demoLoading ? 'Entering Dungeon...' : '1-Click Evaluator Demo'}
                           </button>
                         </div>
                         <div className="mt-3 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-purple-400/70 font-mono">
                           <span>💡 Demo Credentials:</span>
                           <span className="font-bold text-purple-700 dark:text-purple-300">demo@example.com</span>
                           <span>/</span>
-                          <span className="font-bold text-purple-700 dark:text-purple-300">hunter123</span>
+                          <span className="font-bold text-purple-700 dark:text-purple-300">password123</span>
                         </div>
 
                         {/* Metric Highlights */}
@@ -494,15 +538,11 @@ const AppContent: React.FC = () => {
                               Register Hunter License
                             </button>
                             <button
-                              onClick={() => {
-                                setEmail('demo@example.com');
-                                setPassword('hunter123');
-                                setIsRegister(false);
-                                setShowLoginModal(true);
-                              }}
-                              className="rounded-xl border border-purple-300 bg-white px-6 py-3 font-mono text-xs font-bold text-purple-700 shadow-sm hover:bg-purple-50 dark:border-purple-800 dark:bg-[#150a2b] dark:text-purple-300 transition"
+                              onClick={handleDemoLogin}
+                              disabled={demoLoading}
+                              className="rounded-xl border border-purple-300 bg-white px-6 py-3 font-mono text-xs font-bold text-purple-700 shadow-sm hover:bg-purple-50 dark:border-purple-800 dark:bg-[#150a2b] dark:text-purple-300 transition disabled:opacity-60"
                             >
-                              1-Click Demo Login
+                              {demoLoading ? 'Entering Dungeon...' : '1-Click Demo Login'}
                             </button>
                           </div>
                         </div>
@@ -548,20 +588,35 @@ const AppContent: React.FC = () => {
 
             {/* Quick Demo Credentials Autofill Pill */}
             {!isRegister && (
-              <div className="mb-3 rounded-xl border border-purple-200/80 bg-purple-50/70 p-2 text-xs dark:border-purple-900/60 dark:bg-purple-950/40 flex items-center justify-between">
-                <span className="font-mono text-[10px] text-purple-700 dark:text-purple-300">
-                  ⚡ Evaluator Demo: demo@example.com
-                </span>
+              <div className="mb-3 space-y-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setEmail('demo@example.com');
-                    setPassword('hunter123');
-                  }}
-                  className="rounded bg-purple-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-purple-500 transition"
+                  onClick={handleDemoLogin}
+                  disabled={demoLoading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 p-2.5 font-mono text-xs font-bold text-white shadow-md hover:from-purple-600 hover:to-indigo-500 transition disabled:opacity-60"
                 >
-                  Fill
+                  {demoLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5 text-amber-300" />
+                  )}
+                  {demoLoading ? 'Authorizing Demo Hunter...' : '⚡ 1-Click Demo Login (Instant)'}
                 </button>
+                <div className="rounded-xl border border-purple-200/80 bg-purple-50/70 p-2 text-xs dark:border-purple-900/60 dark:bg-purple-950/40 flex items-center justify-between">
+                  <span className="font-mono text-[10px] text-purple-700 dark:text-purple-300">
+                    Credentials: demo@example.com / password123
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('demo@example.com');
+                      setPassword('password123');
+                    }}
+                    className="rounded bg-purple-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-purple-500 transition"
+                  >
+                    Fill
+                  </button>
+                </div>
               </div>
             )}
 
