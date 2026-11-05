@@ -1,15 +1,35 @@
 import React, { useEffect, useRef } from 'react';
 
-// Dynamically import all 97 HD interviewer video animation frames
+// Dynamically import all 97 labeled interviewer video animation frames
 const frameModules = import.meta.glob<{ default: string }>(
-  '../../../assests/Inteviewer/scene*.png',
+  '../../../assests/Inteviewer/marcus_*.png',
   { eager: true }
 );
 
-// Sort frames numerically in exact sequence: scene00001.png -> scene00193.png (97 frames total)
-const FRAME_URLS: string[] = Object.entries(frameModules)
-  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-  .map(([_, mod]) => mod.default);
+// Sort all frame URLs numerically: marcus_001 -> marcus_097
+const sortedEntries = Object.entries(frameModules).sort(([a], [b]) =>
+  a.localeCompare(b, undefined, { numeric: true })
+);
+
+const FRAME_URLS: string[] = sortedEntries.map(([_, mod]) => mod.default);
+
+// 1. Robust Speech Frames: all speech bursts and transitions (53 frames total)
+const SPEECH_INDICES: number[] = sortedEntries
+  .map(([path], idx) => ({ path, idx }))
+  .filter(({ path }) => path.includes('speech'))
+  .map(({ idx }) => idx);
+
+// 2. Closing Smile Frames: warm, encouraging shut-mouth smile when user is speaking (16 frames)
+const CLOSING_SMILE_INDICES: number[] = sortedEntries
+  .map(([path], idx) => ({ path, idx }))
+  .filter(({ path }) => path.includes('closing-smile'))
+  .map(({ idx }) => idx);
+
+// 3. Natural Eye Blink Sequence: 3-stage blink pause (closing -> closed -> opening)
+const BLINK_INDICES: number[] = sortedEntries
+  .map(([path], idx) => ({ path, idx }))
+  .filter(({ path }) => path.includes('blink-pause'))
+  .map(({ idx }) => idx);
 
 export type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo' | 'smile';
 
@@ -54,7 +74,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     if (!ctx) return;
 
-    // Preload & decode all 97 frames into hardware memory
+    // Preload & decode all 97 labeled frames into hardware memory
     const images: HTMLImageElement[] = FRAME_URLS.map((url) => {
       const img = new Image();
       img.src = url;
@@ -65,7 +85,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
 
     let animId: number;
-    const totalFrames = images.length; // 97 frames
+    const totalFrames = images.length;
 
     // Caching aspect-fit destination rectangle (Never query DOM inside render loop)
     let drawX = 0;
@@ -110,23 +130,24 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     resizeObserver.observe(container);
 
-    // Precise 25.0 FPS playback timing (40.0 ms per frame) locked as requested
+    // Precise 25.0 FPS playback timing (40.0 ms per frame)
     const TARGET_FPS = 25;
     const FRAME_INTERVAL_MS = 1000 / TARGET_FPS; // 40.0 ms
-    const LISTENING_FRAME_INTERVAL_MS = 400;
+    // Subtle breathing micro-motion pace while listening
+    const LISTENING_STEP_MS = 100; // 10 FPS gentle smile presence
 
     let lastFrameTime = performance.now();
-    let lastListeningFrameTime = lastFrameTime;
-    let currentSpeechFrame = 30; // Start of speaking articulation
-    let speechDir = 1;
-    let listeningMicroFrame = 0;
-    let microDir = 1;
+    let lastSmileStepTime = performance.now();
+    let speechCursor = 0;
+    let smileCursor = 0;
+    let smileDir = 1;
+    let wasSpeaking = false;
 
     // Natural eye blinking scheduler for listening & idle
     let isBlinking = false;
     let blinkStartTime = 0;
     let nextBlinkTime = performance.now() + 2500;
-    const BLINK_DURATION_MS = 160; // 160ms natural human blink
+    const BLINK_DURATION_MS = 160; // 160ms organic human blink cycle
 
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
@@ -134,6 +155,20 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       const isSpeaking = speakingRef.current;
       const isListening = listeningRef.current && !isSpeaking;
       const isThinking = thinkingRef.current && !isSpeaking;
+
+      // Handle speech state changes
+      if (isSpeaking && !wasSpeaking) {
+        // Start articulating forward through robust speech sequence
+        speechCursor = 0;
+        lastFrameTime = now;
+        isBlinking = false;
+      } else if (!isSpeaking && wasSpeaking) {
+        // Reset to beginning of closing smile when user starts speaking
+        smileCursor = 0;
+        lastSmileStepTime = now;
+        nextBlinkTime = now + 2000 + Math.random() * 1600;
+      }
+      wasSpeaking = isSpeaking;
 
       // Eye blink scheduler (active during listening, idle, and thinking)
       if (!isSpeaking) {
@@ -150,73 +185,61 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         isBlinking = false;
       }
 
-      // Keep speech motion smooth while easing the source video down to 15 FPS.
+      // Advance frames strictly locked to 25.0 FPS
       const elapsed = now - lastFrameTime;
       if (elapsed >= FRAME_INTERVAL_MS) {
         const steps = Math.floor(elapsed / FRAME_INTERVAL_MS);
         lastFrameTime = now - (elapsed % FRAME_INTERVAL_MS);
 
-        if (isSpeaking) {
-          // Slow the source clip while cycling through its speaking frames.
-          currentSpeechFrame += speechDir * steps;
-          if (currentSpeechFrame >= totalFrames - 1) {
-            currentSpeechFrame = totalFrames - 1;
-            speechDir = -1;
-          } else if (currentSpeechFrame <= 30) {
-            currentSpeechFrame = 30;
-            speechDir = 1;
-          }
+        if (isSpeaking && SPEECH_INDICES.length > 0) {
+          // Robust speech animation across all 53 speech frames at 25 FPS
+          speechCursor = (speechCursor + steps) % SPEECH_INDICES.length;
         }
       }
 
-      if (isSpeaking) {
-        lastListeningFrameTime = now;
-      } else if (now - lastListeningFrameTime >= LISTENING_FRAME_INTERVAL_MS) {
-        lastListeningFrameTime = now;
-        // Gentle listening micro-motion across the three attentive frames.
-        listeningMicroFrame += microDir;
-        if (listeningMicroFrame >= 2) {
-          listeningMicroFrame = 2;
-          microDir = -1;
-        } else if (listeningMicroFrame <= 0) {
-          listeningMicroFrame = 0;
-          microDir = 1;
+      // Smooth listening smile micro-presence (gentle human breathing rate)
+      if (!isSpeaking && CLOSING_SMILE_INDICES.length > 0) {
+        const smileElapsed = now - lastSmileStepTime;
+        if (smileElapsed >= LISTENING_STEP_MS) {
+          lastSmileStepTime = now;
+          smileCursor += smileDir;
+          if (smileCursor >= CLOSING_SMILE_INDICES.length - 1) {
+            smileCursor = CLOSING_SMILE_INDICES.length - 1;
+            smileDir = -1;
+          } else if (smileCursor <= 0) {
+            smileCursor = 0;
+            smileDir = 1;
+          }
         }
       }
 
       let activeIndex = 0;
 
-      if (isSpeaking) {
-        // Speaking: mouth articulates at 15 FPS.
-        activeIndex = currentSpeechFrame;
-      } else if (isBlinking) {
-        // Natural blink sequence while listening with mouth shut & warm smile:
-        // Frame 18 (scene00037.png): closing
-        // Frame 19 (scene00039.png): closed blink
-        // Frame 20 (scene00041.png): opening
+      if (isSpeaking && SPEECH_INDICES.length > 0) {
+        // When interviewer is speaking: use robust speech articulation (53 frames)
+        activeIndex = SPEECH_INDICES[speechCursor] ?? SPEECH_INDICES[0];
+      } else if (isBlinking && BLINK_INDICES.length >= 3) {
+        // When blinking: natural 3-stage human blink (closing -> closed -> opening)
         const blinkProgress = now - blinkStartTime;
-        if (blinkProgress < 40) {
-          activeIndex = 18;
-        } else if (blinkProgress < 120) {
-          activeIndex = 19;
+        if (blinkProgress < 45) {
+          activeIndex = BLINK_INDICES[0]; // marcus_020_blink-pause-1
+        } else if (blinkProgress < 115) {
+          activeIndex = BLINK_INDICES[1]; // marcus_021_blink-pause-1 (closed)
         } else {
-          activeIndex = 20;
+          activeIndex = BLINK_INDICES[2]; // marcus_022_blink-pause-1 (opening)
         }
-      } else if (isListening) {
-        // When listening to user: shut mouth, warm attentive smile, subtle micro-motion
-        activeIndex = Math.max(0, Math.min(2, listeningMicroFrame));
-      } else if (isThinking) {
-        // When evaluating: shut mouth, attentive focused expression
-        activeIndex = 0;
+      } else if (CLOSING_SMILE_INDICES.length > 0) {
+        // When user is saying (candidate speaking / interviewer listening), or idle / thinking:
+        // Use closing-smile with shut mouth, warm smile, and gentle micro-motion
+        activeIndex = CLOSING_SMILE_INDICES[smileCursor] ?? CLOSING_SMILE_INDICES[0];
       } else {
-        // Idle ready state: shut mouth, warm welcoming smile
-        activeIndex = Math.max(0, Math.min(2, listeningMicroFrame));
+        activeIndex = 0;
       }
 
       const clampedIndex = Math.max(0, Math.min(totalFrames - 1, activeIndex));
       const activeImg = images[clampedIndex] || images[0];
 
-      // Draw on each display refresh while advancing source frames at 15 FPS.
+      // Single hardware draw call per frame (Smooth 25 FPS, zero jitter)
       if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
         ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
       }
