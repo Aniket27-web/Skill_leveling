@@ -171,11 +171,6 @@ const AppContent: React.FC = () => {
 
           {/* User & Rank Controls */}
           <div className="flex items-center space-x-3">
-            {/* Hunter Rank Badge Widget */}
-            <div className="hidden md:flex">
-              <HunterRankBadge level={hunterLevel} size="sm" showDetails={true} />
-            </div>
-
             {/* Dark / Light Mode Toggle */}
             <button
               onClick={toggleTheme}
@@ -189,6 +184,10 @@ const AppContent: React.FC = () => {
               <span className="text-xs text-slate-400 font-mono">Syncing mana...</span>
             ) : currentUser ? (
               <div className="flex items-center space-x-2">
+                {/* Hunter Rank Badge Widget - Only shown when authenticated */}
+                <div className="hidden md:flex">
+                  <HunterRankBadge level={hunterLevel} size="sm" showDetails={true} />
+                </div>
                 <Link
                   to="/"
                   className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 dark:text-slate-300 dark:hover:bg-purple-950/50"
