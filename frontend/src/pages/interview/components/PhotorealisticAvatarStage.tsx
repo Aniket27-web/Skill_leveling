@@ -110,11 +110,13 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     resizeObserver.observe(container);
 
-    // Precise 25.0 FPS playback timing (40.0 ms per frame)
+    // Precise 25.0 FPS playback timing (40.0 ms per frame) locked as requested
     const TARGET_FPS = 25;
     const FRAME_INTERVAL_MS = 1000 / TARGET_FPS; // 40.0 ms
+    const LISTENING_FRAME_INTERVAL_MS = 400;
 
     let lastFrameTime = performance.now();
+    let lastListeningFrameTime = lastFrameTime;
     let currentSpeechFrame = 30; // Start of speaking articulation
     let speechDir = 1;
     let listeningMicroFrame = 0;
@@ -148,14 +150,14 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         isBlinking = false;
       }
 
-      // Lock frame advancement strictly to 25 frames per second (40ms ticks)
+      // Keep speech motion smooth while easing the source video down to 15 FPS.
       const elapsed = now - lastFrameTime;
       if (elapsed >= FRAME_INTERVAL_MS) {
         const steps = Math.floor(elapsed / FRAME_INTERVAL_MS);
         lastFrameTime = now - (elapsed % FRAME_INTERVAL_MS);
 
         if (isSpeaking) {
-          // Smooth 25 FPS speaking articulation across frames (30 to 96)
+          // Slow the source clip while cycling through its speaking frames.
           currentSpeechFrame += speechDir * steps;
           if (currentSpeechFrame >= totalFrames - 1) {
             currentSpeechFrame = totalFrames - 1;
@@ -164,23 +166,28 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
             currentSpeechFrame = 30;
             speechDir = 1;
           }
-        } else {
-          // Attentive listening micro-presence loop across smiling frames (0, 1, 2)
-          listeningMicroFrame += microDir * steps;
-          if (listeningMicroFrame >= 2) {
-            listeningMicroFrame = 2;
-            microDir = -1;
-          } else if (listeningMicroFrame <= 0) {
-            listeningMicroFrame = 0;
-            microDir = 1;
-          }
+        }
+      }
+
+      if (isSpeaking) {
+        lastListeningFrameTime = now;
+      } else if (now - lastListeningFrameTime >= LISTENING_FRAME_INTERVAL_MS) {
+        lastListeningFrameTime = now;
+        // Gentle listening micro-motion across the three attentive frames.
+        listeningMicroFrame += microDir;
+        if (listeningMicroFrame >= 2) {
+          listeningMicroFrame = 2;
+          microDir = -1;
+        } else if (listeningMicroFrame <= 0) {
+          listeningMicroFrame = 0;
+          microDir = 1;
         }
       }
 
       let activeIndex = 0;
 
       if (isSpeaking) {
-        // Speaking: mouth articulates at 25 FPS
+        // Speaking: mouth articulates at 15 FPS.
         activeIndex = currentSpeechFrame;
       } else if (isBlinking) {
         // Natural blink sequence while listening with mouth shut & warm smile:
@@ -209,7 +216,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       const clampedIndex = Math.max(0, Math.min(totalFrames - 1, activeIndex));
       const activeImg = images[clampedIndex] || images[0];
 
-      // Single hardware draw call per frame (Smooth 25 FPS, 0 stutter)
+      // Draw on each display refresh while advancing source frames at 15 FPS.
       if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
         ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
       }

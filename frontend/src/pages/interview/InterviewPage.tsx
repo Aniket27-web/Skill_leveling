@@ -35,6 +35,8 @@ import {
   Camera,
   CameraOff,
   PhoneOff,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 
 function generateUUID(): string {
@@ -119,6 +121,25 @@ export const InterviewPage: React.FC = () => {
   const [isDurationExpired, setIsDurationExpired] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(() => typeof document !== 'undefined' && !!document.fullscreenElement);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
   const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
   const [viseme, setViseme] = useState<Viseme>('neutral');
   const [cameraEnabled, setCameraEnabled] = useState(false);
@@ -494,7 +515,13 @@ export const InterviewPage: React.FC = () => {
       hasDeliveredIntroRef.current = true;
       const greeting = getTimeBasedGreeting();
       const namePart = candidateFirstName ? ` ${candidateFirstName}` : '';
-      spokenSentence = `Hello${namePart}, ${greeting}! Welcome to your technical interview. I'm Marcus, and I will be conducting your session today. We will walk through questions based on your technical background and experience. Take your time, think through your solutions out loud, and speak naturally whenever you're ready. To begin, here is our first question: ${currentQ.text}`;
+      spokenSentence = `Hello${namePart}, ${greeting}! It's a pleasure to meet you. I'm Marcus, and I'll be your interviewer today.
+
+Before we begin, I want you to feel comfortable. This is a professional yet conversational interview, so there's no need to rush. Take a moment to understand each question, explain your thought process, and feel free to ask for clarification whenever needed.
+
+I'll be evaluating your technical knowledge, problem-solving approach, and communication skills throughout our conversation.
+
+Alright, ${namePart ? namePart.trim() + ", " : ""}let's get started. Could you walk me through your experience and the technical skills you're most confident in?`;
     } else {
       spokenSentence = `Thank you. Let's move on to question ${orderIndex}: ${currentQ.text}`;
     }
@@ -936,6 +963,9 @@ export const InterviewPage: React.FC = () => {
                   setVoiceToast(null);
                   setHasJoinedVideoCall(true);
                   speakQuestion(true);
+                  if (typeof document !== 'undefined' && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                  }
                 }}
                 disabled={!currentQ}
                 className="w-full rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 hover:from-purple-600 hover:to-indigo-500 text-white font-bold text-sm sm:text-base py-3.5 shadow-[0_0_20px_rgba(147,51,234,0.45)] transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2"
@@ -956,42 +986,31 @@ export const InterviewPage: React.FC = () => {
   if (session.interview_mode === 'video') {
     return (
       <div className="fixed inset-0 z-50 flex flex-col h-screen w-screen bg-black overflow-hidden select-none animate-fade-in text-white">
-        {/* Conference Header Bar */}
-        <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 border-b border-purple-500/50 shadow-[0_1px_0_rgba(0,0,0,0.95)] bg-black shrink-0">
-          <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
-            <div>
-              <p className="text-sm font-bold text-white flex items-center gap-2">
-                Marcus Vance <span className="text-slate-400 font-normal hidden sm:inline">· Senior Technical Partner</span>
-                <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.5 rounded">Q{orderIndex}/{totalQuestions}</span>
-              </p>
-              <p className="text-xs text-purple-300/70 hidden sm:block">Live Technical Assessment · {session.difficulty.toUpperCase()} Dungeon</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {session.duration_minutes && (
-              <div className="hidden sm:block">
-                <CountdownTimer
-                  secondsRemaining={durationCountdown.secondsRemaining}
-                  totalSeconds={durationCountdown.totalSeconds}
-                  percentRemaining={durationCountdown.percentRemaining}
-                  colorState={durationCountdown.colorState}
-                  formattedTime={durationCountdown.formattedTime}
-                />
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs font-mono text-purple-200">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-              <span className="hidden sm:inline">Live Call Connected</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Stage: 60 FPS Photorealistic Video Stream */}
-        <div className="relative w-full overflow-hidden border-x border-purple-500/50 bg-black shadow-[inset_0_0_0_1px_rgba(0,0,0,0.9)] flex-1 h-full">
+        {/* Main Stage: Full-Size Photorealistic Video Stream (Top Header Bar removed per user design) */}
+        <div className="relative w-full overflow-hidden bg-black flex-1 h-full">
           <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-900" aria-label="Loading interviewer" />}>
-            <AvatarStage className="h-full w-full rounded-none" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
+            <AvatarStage
+              className="h-full w-full rounded-none"
+              speaking={isInterviewerSpeaking}
+              listening={isListening}
+              viseme={viseme}
+              isEvaluating={isSubmitting}
+              interviewerName={`Marcus Vance · Senior Technical Partner · Q${orderIndex}/${totalQuestions}`}
+            />
           </Suspense>
+
+          {/* Floating Duration Timer Pill (Unobtrusive Top-Center/Right) */}
+          {session.duration_minutes && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 hidden sm:block">
+              <CountdownTimer
+                secondsRemaining={durationCountdown.secondsRemaining}
+                totalSeconds={durationCountdown.totalSeconds}
+                percentRemaining={durationCountdown.percentRemaining}
+                colorState={durationCountdown.colorState}
+                formattedTime={durationCountdown.formattedTime}
+              />
+            </div>
+          )}
 
           {/* Line-by-Line Floating Closed-Caption Pill (Never overrides Marcus Vance) */}
           {(isInterviewerSpeaking
@@ -1049,25 +1068,16 @@ export const InterviewPage: React.FC = () => {
           )}
         </div>
 
-        {/* Executive Conference Controls Dock */}
-        <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 sm:px-8 border-t border-purple-500/50 shadow-[0_-1px_0_rgba(0,0,0,0.95)] bg-black">
-          {/* Real-time Status & Audio Waveform */}
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-            <span className={`h-2.5 w-2.5 rounded-full ${isListening ? 'bg-blue-400 animate-pulse' : isInterviewerSpeaking ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-            <span className="text-xs font-mono text-purple-200">
-              {isListening ? 'Listening to your response…' : isInterviewerSpeaking ? 'Marcus Vance is speaking…' : isSubmitting ? 'Evaluating response…' : 'Microphone ready'}
-            </span>
-            {isListening && <div className="w-24 sm:w-32"><AudioWaveform active barCount={16} /></div>}
-          </div>
-
-          {/* Conference Action Buttons */}
-          <div className="flex items-center gap-2.5 sm:gap-4">
+        {/* Executive Conference Controls Dock (Matching Screenshot Layout) */}
+        <div className="shrink-0 flex flex-col items-center justify-center gap-2 px-4 py-3 sm:px-8 border-t border-purple-500/30 bg-[#07040d]/95 backdrop-blur-md">
+          {/* Centered Conference Action Buttons */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
             <button
               type="button"
               onClick={toggleMicrophone}
               aria-pressed={microphoneEnabled}
               title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${microphoneEnabled ? 'border-purple-500/60 bg-[#10091d] text-white hover:border-purple-300 hover:bg-purple-950/80' : 'border-rose-300/70 bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${microphoneEnabled ? 'border-purple-500/60 bg-[#161026] text-white hover:border-purple-300 hover:bg-purple-950/80 shadow-md' : 'border-rose-300/70 bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
             >
               {microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
             </button>
@@ -1076,7 +1086,7 @@ export const InterviewPage: React.FC = () => {
               type="button"
               onClick={toggleCamera}
               title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${cameraEnabled ? 'border-purple-500/60 bg-[#10091d] text-white hover:border-purple-300 hover:bg-purple-950/80' : 'border-rose-300/70 bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all duration-200 ${cameraEnabled ? 'border-purple-500/60 bg-[#161026] text-white hover:border-purple-300 hover:bg-purple-950/80 shadow-md' : 'border-rose-300/70 bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
             >
               {cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}
             </button>
@@ -1085,16 +1095,35 @@ export const InterviewPage: React.FC = () => {
               type="button"
               onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)}
               title="Repeat question aloud"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-purple-500/60 bg-[#10091d] text-white transition-all duration-200 hover:border-purple-300 hover:bg-purple-950/80"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-purple-500/60 bg-[#161026] text-white transition-all duration-200 hover:border-purple-300 hover:bg-purple-950/80 shadow-md"
             >
               <Volume2 className="h-5 w-5" />
             </button>
 
             <button
               type="button"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen'}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-purple-500/60 bg-[#161026] text-white transition-all duration-200 hover:border-purple-300 hover:bg-purple-950/80 shadow-md"
+            >
+              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleEndVideoCall}
+              disabled={completeSessionMutation.isPending}
+              title="End video call"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-600 text-white hover:bg-rose-700 transition shadow-[0_0_14px_rgba(225,29,72,0.5)] disabled:opacity-50"
+            >
+              <PhoneOff className="h-5 w-5" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleSubmitAnswer(false)}
               disabled={!answerText.trim() || isSubmitting || isFinishingInterview}
-              className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-fuchsia-600 px-5 text-xs sm:text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-fuchsia-600 px-6 text-xs sm:text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isSubmitting || isFinishingInterview ? (
                 <>
@@ -1106,21 +1135,16 @@ export const InterviewPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4" /> Next Question
+                  <Send className="h-4 w-4" /> Submit answer
                 </>
               )}
             </button>
-
-            <button
-              type="button"
-              onClick={handleEndVideoCall}
-              disabled={completeSessionMutation.isPending}
-              title="End video call"
-              className="flex h-11 items-center justify-center rounded-full bg-rose-600 px-4 text-white hover:bg-rose-700 transition disabled:opacity-50"
-            >
-              <PhoneOff className="h-5 w-5" />
-            </button>
           </div>
+
+          {/* Subtitle helper description matching screenshot */}
+          <p className="text-[11px] text-slate-400 dark:text-purple-300/60 font-sans tracking-wide">
+            Your spoken answer is being transcribed for feedback
+          </p>
         </div>
 
         {/* Feedback Modal in Full Screen Mode */}

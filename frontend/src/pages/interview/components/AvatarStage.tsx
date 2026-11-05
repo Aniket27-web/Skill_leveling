@@ -9,6 +9,7 @@ export interface AvatarStageProps {
   viseme: Viseme;
   className?: string;
   isEvaluating?: boolean;
+  interviewerName?: string;
 }
 
 export const AvatarStage: React.FC<AvatarStageProps> = ({
@@ -17,6 +18,7 @@ export const AvatarStage: React.FC<AvatarStageProps> = ({
   viseme,
   className,
   isEvaluating = false,
+  interviewerName,
 }) => {
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-slate-950 ${className || 'h-[360px] sm:h-[480px]'}`}>
@@ -26,6 +28,7 @@ export const AvatarStage: React.FC<AvatarStageProps> = ({
         isThinking={isEvaluating}
         viseme={viseme}
         className="w-full h-full"
+        interviewerName={interviewerName}
       />
     </div>
   );

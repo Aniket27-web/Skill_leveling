@@ -38,7 +38,6 @@ const InterviewPage = lazy(() => import('./pages/interview/InterviewPage').then(
 const SummaryPage = lazy(() => import('./pages/summary/SummaryPage').then((module) => ({ default: module.SummaryPage })));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
-const AISettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
