@@ -35,8 +35,6 @@ import {
   Camera,
   CameraOff,
   PhoneOff,
-  Maximize2,
-  Minimize2,
 } from 'lucide-react';
 
 function generateUUID(): string {
@@ -246,26 +244,7 @@ export const InterviewPage: React.FC = () => {
   const speakText = (text: string, listenAfter: boolean = false) => {
     if (!text.trim() || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    if (subtitleTimerRef.current) {
-      clearTimeout(subtitleTimerRef.current);
-      subtitleTimerRef.current = null;
-    }
     setSpokenText(text);
-
-    // Compute sentence ranges for line-by-line streaming subtitles
-    const sentences = text.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)?.map((s) => s.trim()).filter(Boolean) || [text.trim()];
-    let cursor = 0;
-    const ranges = sentences.map((sentence) => {
-      const start = text.indexOf(sentence, cursor);
-      const end = start >= 0 ? start + sentence.length : cursor + sentence.length;
-      cursor = end;
-      return { text: sentence, start: Math.max(0, start), end };
-    });
-    sentenceRangesRef.current = ranges;
-    if (ranges.length > 0) {
-      setActiveSubtitleLine(ranges[0].text);
-    }
-
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = speechVoices.find((item) => item.name === selectedVoiceName);
     if (voice) {
@@ -278,57 +257,17 @@ export const InterviewPage: React.FC = () => {
     utterance.pitch = 1.0;
     utterance.onstart = () => setIsInterviewerSpeaking(true);
     utterance.onend = () => {
-      if (subtitleTimerRef.current) {
-        clearTimeout(subtitleTimerRef.current);
-        subtitleTimerRef.current = null;
-      }
       setIsInterviewerSpeaking(false);
       setViseme('neutral');
-      setTimeout(() => {
-        setActiveSubtitleLine('');
-      }, 1600);
       if (listenAfter && (session?.interview_mode === 'video' || session?.interview_mode === 'audio')) {
         startListening();
       }
     };
-    utterance.onerror = () => {
-      if (subtitleTimerRef.current) {
-        clearTimeout(subtitleTimerRef.current);
-        subtitleTimerRef.current = null;
-      }
-      setIsInterviewerSpeaking(false);
-      setViseme('neutral');
-    };
+    utterance.onerror = () => { setIsInterviewerSpeaking(false); setViseme('neutral'); };
     utterance.onboundary = (event) => {
       const token = text.slice(event.charIndex, event.charIndex + 3).toLowerCase();
       setViseme(/[a]/.test(token) ? 'aa' : /[eiy]/.test(token) ? 'ee' : /[o]/.test(token) ? 'oh' : /[u]/.test(token) ? 'oo' : 'neutral');
-
-      if (event.charIndex !== undefined && sentenceRangesRef.current.length > 0) {
-        const active = sentenceRangesRef.current.find(
-          (r) => event.charIndex >= r.start && event.charIndex <= r.end
-        );
-        if (active && active.text) {
-          setActiveSubtitleLine(active.text);
-        }
-      }
     };
-
-    // Fallback cadence timer in case browser boundary events are irregular
-    if (ranges.length > 1) {
-      let idx = 0;
-      const stepSentence = () => {
-        idx++;
-        if (idx < ranges.length) {
-          setActiveSubtitleLine(ranges[idx].text);
-          const wordCount = ranges[idx].text.split(/\s+/).length;
-          const waitMs = Math.max(2200, (wordCount / 2.7) * 1000);
-          subtitleTimerRef.current = setTimeout(stepSentence, waitMs);
-        }
-      };
-      const firstWordCount = ranges[0].text.split(/\s+/).length;
-      subtitleTimerRef.current = setTimeout(stepSentence, Math.max(2200, (firstWordCount / 2.7) * 1000));
-    }
-
     window.speechSynthesis.speak(utterance);
   };
 
@@ -945,11 +884,11 @@ export const InterviewPage: React.FC = () => {
                   setVoiceToast(null);
                   setHasJoinedVideoCall(true);
                 }}
-                disabled={!mediaSetupComplete || !microphoneEnabled || !isSpeechSupported || !currentQ}
+                disabled={!currentQ}
                 className="w-full rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 hover:from-purple-600 hover:to-indigo-500 text-white font-bold text-sm sm:text-base py-3.5 shadow-[0_0_20px_rgba(147,51,234,0.45)] transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                <span>{mediaSetupComplete ? 'Enter Video Interview Arena' : 'Checking Camera & Microphone…'}</span>
+                <span>Enter Video Interview Arena</span>
               </button>
               <p className="text-center text-[11px] text-slate-400 dark:text-purple-400/60 font-mono">
                 Microphone is active for live voice transcription.
@@ -960,13 +899,6 @@ export const InterviewPage: React.FC = () => {
       </div>
     );
   }
-  const candidateLastPhrase = useMemo(() => {
-    const raw = (interimTranscript || answerText).trim();
-    if (!raw) return '';
-    const last = raw.split(/(?<=[.?!])\s+/).pop()?.trim();
-    return last || raw;
-  }, [interimTranscript, answerText]);
-
 
   return (
     <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
@@ -1114,160 +1046,59 @@ export const InterviewPage: React.FC = () => {
         </div>
       </section>}
 
-      {session.interview_mode === 'video' && (
-        <section
-          className={
-            isFullscreenVideo
-              ? "fixed inset-0 z-50 flex flex-col h-screen w-screen bg-[#07040e] overflow-hidden select-none animate-fade-in"
-              : "overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl"
-          }
-          aria-label="Video interview room"
-        >
-          {/* Executive Conference Header */}
-          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 border-b border-purple-900/40 bg-gradient-to-r from-purple-950/90 via-[#0d071a] to-purple-950/90 backdrop-blur-md text-white shrink-0">
-            <div className="flex items-center gap-3">
-              <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
-              <div>
-                <p className="text-sm font-bold text-white flex items-center gap-2">
-                  Marcus Vance <span className="text-slate-400 font-normal hidden sm:inline">· Senior Technical Partner</span>
-                  <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.5 rounded">Q{orderIndex}/{totalQuestions}</span>
-                </p>
-                <p className="text-xs text-purple-300/70 hidden sm:block">Live Technical Assessment · {session.difficulty.toUpperCase()} Dungeon</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {session.duration_minutes && (
-                <div className="hidden sm:block">
-                  <CountdownTimer
-                    secondsRemaining={durationCountdown.secondsRemaining}
-                    totalSeconds={durationCountdown.totalSeconds}
-                    percentRemaining={durationCountdown.percentRemaining}
-                    colorState={durationCountdown.colorState}
-                    formattedTime={durationCountdown.formattedTime}
-                  />
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-xs font-mono text-purple-200">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-                <span className="hidden sm:inline">Live Call Connected</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFullscreenVideo((prev) => !prev)}
-                title={isFullscreenVideo ? "Exit full screen" : "Enter full screen"}
-                className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition"
-              >
-                {isFullscreenVideo ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-              </button>
+      {session.interview_mode === 'video' && <section className="overflow-hidden rounded-3xl border border-purple-500/30 bg-[#0d071a] shadow-2xl" aria-label="Video interview room">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-white sm:px-6 border-b border-purple-900/40 bg-gradient-to-r from-purple-950/80 via-[#0d071a] to-purple-950/80 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Skill Leveling Emblem" className="h-8 w-8 object-contain drop-shadow-[0_0_12px_rgba(147,51,234,0.6)]" />
+            <div>
+              <p className="text-sm font-bold text-white flex items-center gap-2">Personal AI Interviewer <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest border border-purple-500/50 bg-purple-950/60 px-1.5 py-0.2 rounded">Gate Arena</span></p>
+              <p className="text-xs text-purple-300/70">Live interactive video interview · Question {orderIndex} of {totalQuestions}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2 text-xs font-mono text-purple-200"><span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" /> Live Call Connected</div>
+        </div>
+        <div className="relative mx-auto h-[min(64vh,680px)] min-h-[380px] max-h-[680px] overflow-hidden bg-[#111214] sm:min-h-[460px]">
+          <Suspense fallback={<div className="h-full min-h-[380px] animate-pulse bg-slate-900 sm:min-h-[460px]" aria-label="Loading interviewer" />}>
+            <AvatarStage className="h-full min-h-[380px] rounded-none sm:min-h-[460px]" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
+          </Suspense>
 
-          {/* Main Stage: Rock-Solid Photorealistic Video Stream */}
-          <div className={`relative w-full overflow-hidden bg-[#090a0f] flex-1 ${isFullscreenVideo ? 'h-full' : 'h-[min(64vh,680px)] min-h-[420px]'}`}>
-            <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-900" aria-label="Loading interviewer" />}>
-              <AvatarStage className="h-full w-full rounded-none" speaking={isInterviewerSpeaking} listening={isListening} viseme={viseme} isEvaluating={isSubmitting} />
-            </Suspense>
 
-            {/* Line-by-Line Floating Closed-Caption Pill (Streams 1 sentence at a time, never overrides Marcus Vance) */}
-            {(isInterviewerSpeaking ? (activeSubtitleLine || spokenText || currentQ?.text) : isListening ? (candidateLastPhrase ? `🗣️ You: ${candidateLastPhrase}` : 'Listening to your response…') : null) && (
-              <div aria-live="polite" className="pointer-events-none absolute bottom-4 inset-x-0 z-30 flex justify-center px-4 sm:px-8">
-                <div className="inline-flex max-w-2xl items-center gap-2.5 rounded-full bg-black/85 px-6 py-2.5 text-xs sm:text-sm font-medium text-slate-100 shadow-2xl border border-white/15 backdrop-blur-xl text-center leading-relaxed animate-fade-in transition-all duration-300">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  <span className="line-clamp-2">
-                    {isInterviewerSpeaking
-                      ? (activeSubtitleLine || spokenText || currentQ?.text)
-                      : isListening
-                      ? (candidateLastPhrase ? `🗣️ You: ${candidateLastPhrase}` : 'Listening to your response…')
-                      : ''}
-                  </span>
-                </div>
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-0 bottom-10 flex justify-center bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pb-5 pt-16 text-center text-white sm:bottom-12 sm:px-8">
+            <p className="max-w-3xl rounded-xl bg-black/60 px-5 py-3 text-base font-medium leading-relaxed shadow-xl sm:text-lg border border-white/10 backdrop-blur-md">
+              {isInterviewerSpeaking
+                ? (spokenText || interviewerResponse || currentQ?.text)
+                : isListening
+                ? `🗣️ You: ${interimTranscript || answerText || 'Listening to your response...'}`
+                : (currentQ?.text || 'Preparing next challenge…')}
+            </p>
+          </div>
+          <div className={`absolute right-3 top-3 h-28 w-40 overflow-hidden rounded-2xl border bg-[#202124] shadow-2xl transition-all sm:right-5 sm:top-5 sm:h-40 sm:w-56 ${isListening ? 'border-emerald-400 ring-2 ring-emerald-400/80 shadow-[0_0_20px_rgba(52,211,153,0.35)]' : 'border-white/20'}`}>
+            {cameraEnabled ? (
+              <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-lg font-bold shadow">
+                  {candidateFirstName ? candidateFirstName[0].toUpperCase() : 'Y'}
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">Camera off</span>
               </div>
             )}
-
-            {/* Candidate PiP Camera Preview */}
-            <div className={`absolute right-4 top-4 h-28 w-40 sm:h-38 sm:w-56 overflow-hidden rounded-2xl border bg-[#1a1b1f] shadow-2xl transition-all z-20 ${isListening ? 'border-emerald-400 ring-2 ring-emerald-400/80 shadow-[0_0_24px_rgba(52,211,153,0.4)]' : 'border-white/20'}`}>
-              {cameraEnabled ? (
-                <video ref={cameraRef} autoPlay muted playsInline aria-label="Your local camera preview" className="h-full w-full scale-x-[-1] object-cover" />
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-2 text-white/70">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-tr from-purple-700 to-indigo-600 text-base font-bold shadow">
-                    {candidateFirstName ? candidateFirstName[0].toUpperCase() : 'Y'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-medium">Camera off</span>
-                </div>
-              )}
-              <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
-                {microphoneEnabled ? <Mic className="h-3 w-3 text-emerald-400" /> : <MicOff className="h-3 w-3 text-rose-400" />}
-                <span>{candidateFirstName || 'You'}</span>
-              </div>
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
+              {microphoneEnabled ? <Mic className="h-3 w-3 text-emerald-400" /> : <MicOff className="h-3 w-3 text-rose-400" />}
+              <span>{candidateFirstName || 'You'}</span>
             </div>
           </div>
-
-          {/* Executive Conference Controls Dock */}
-          <div className="shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 sm:px-8 border-t border-purple-900/40 bg-gradient-to-r from-purple-950/95 via-[#0d071a] to-purple-950/95 backdrop-blur-xl">
-            {/* Real-time Status & Audio Waveform */}
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-              <span className={`h-2.5 w-2.5 rounded-full ${isListening ? 'bg-blue-400 animate-pulse' : isInterviewerSpeaking ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'}`} />
-              <span className="text-xs font-mono text-purple-200">
-                {isListening ? 'Listening to your response…' : isInterviewerSpeaking ? 'Marcus Vance is speaking…' : isSubmitting ? 'Evaluating response…' : 'Microphone ready'}
-              </span>
-              {isListening && <div className="w-24 sm:w-32"><AudioWaveform active barCount={16} /></div>}
-            </div>
-
-            {/* Conference Action Buttons */}
-            <div className="flex items-center gap-2.5 sm:gap-4">
-              <button
-                type="button"
-                onClick={toggleMicrophone}
-                aria-pressed={microphoneEnabled}
-                title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
-                className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4e5357]' : 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
-              >
-                {microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleCamera}
-                title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'}
-                className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 ${cameraEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4e5357]' : 'bg-rose-600 text-white shadow-[0_0_12px_rgba(225,29,72,0.5)]'}`}
-              >
-                {cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)}
-                title="Repeat question aloud"
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-[#3c4043] text-white transition-all duration-200 hover:bg-[#4e5357]"
-              >
-                <Volume2 className="h-5 w-5" />
-              </button>
-
-              {!justEvaluatedFeedback && (
-                <button
-                  type="button"
-                  onClick={() => handleSubmitAnswer(false)}
-                  disabled={!answerText.trim() || isSubmitting || !microphoneEnabled}
-                  className="flex h-11 items-center gap-2 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-fuchsia-600 px-5 text-xs sm:text-sm font-bold text-white shadow-[0_0_15px_rgba(147,51,234,0.4)] hover:opacity-90 transition-all disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <Send className="h-4 w-4" /> Submit Answer
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={handleEndVideoCall}
-                disabled={completeSessionMutation.isPending}
-                title="End video call"
-                className="flex h-11 items-center justify-center rounded-full bg-rose-600 px-4 text-white hover:bg-rose-700 transition disabled:opacity-50"
-              >
-                <PhoneOff className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 px-3 py-4 sm:gap-5 sm:px-6">
+          <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} aria-label={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</button>
+          <button type="button" onClick={toggleCamera} aria-label={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} title={cameraEnabled ? 'Turn camera off' : 'Turn camera on'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${cameraEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{cameraEnabled ? <Camera className="h-5 w-5" /> : <CameraOff className="h-5 w-5" />}</button>
+          <button type="button" onClick={() => speakText(`Here is question ${orderIndex} again: ${currentQ?.text}`, true)} aria-label="Repeat question aloud" title="Repeat question" className="flex h-12 w-12 items-center justify-center rounded-full bg-[#3c4043] text-white transition hover:bg-[#4b4f52]"><Volume2 className="h-5 w-5" /></button>
+          <button type="button" onClick={handleEndVideoCall} disabled={completeSessionMutation.isPending} aria-label="End interview" title="End interview" className="flex h-12 min-w-16 items-center justify-center rounded-full bg-rose-600 px-5 text-white transition hover:bg-rose-700 disabled:opacity-50"><PhoneOff className="h-5 w-5" /></button>
+          {!justEvaluatedFeedback && <button type="button" onClick={() => handleSubmitAnswer(false)} disabled={!answerText.trim() || isSubmitting || !microphoneEnabled} className="flex h-12 items-center gap-2 rounded-full bg-[#8ab4f8] px-5 text-sm font-semibold text-[#202124] hover:bg-[#aecbfa] disabled:cursor-not-allowed disabled:opacity-40"><Send className="h-4 w-4" /> Submit answer</button>}
+          {isListening && <div className="basis-full"><AudioWaveform active barCount={24} /></div>}
+          <p className="basis-full text-center text-xs text-white/55" aria-live="polite">{isListening ? 'Listening to your answer…' : isInterviewerSpeaking ? 'Interviewer is speaking…' : justEvaluatedFeedback ? 'Answer submitted' : 'Your spoken answer is being transcribed for feedback'}</p>
+        </div>
+      </section>}
 
       {session.interview_mode === 'video' && networkError && (
         <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-rose-300/30 bg-rose-950/70 p-4 text-sm text-rose-100">
