@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./interview_coach.db"
     COOKIE_NAME: str = "access_token"
 
+    # SMTP / Email Settings for OTP Verification & Password Reset
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@skillleveling.net"
+    SMTP_FROM_NAME: str = "Skill Leveling Support"
+    SMTP_TLS: bool = True
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
@@ -37,4 +46,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

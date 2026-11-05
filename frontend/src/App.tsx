@@ -23,6 +23,10 @@ import {
   ArrowRight,
   Target,
   Settings,
+  KeyRound,
+  Mail,
+  ArrowLeft,
+  AlertCircle,
 } from 'lucide-react';
 import { clearAISettings } from './api/aiSettings';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -62,6 +66,17 @@ const AppContent: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [hunterLevel, setHunterLevel] = useState<number>(10);
+
+  // Forgot password & OTP recovery state
+  const [isForgotPassword, setIsForgotPassword] = useState<boolean>(false);
+  const [forgotStep, setForgotStep] = useState<'email' | 'otp'>('email');
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [forgotLoading, setForgotLoading] = useState<boolean>(false);
+  const [forgotSuccessMsg, setForgotSuccessMsg] = useState<string | null>(null);
+  const [forgotErrorMsg, setForgotErrorMsg] = useState<string | null>(null);
+  const [debugOtpNotice, setDebugOtpNotice] = useState<string | null>(null);
 
   // Sync hunter profile
   const syncHunter = () => {
@@ -173,6 +188,93 @@ const AppContent: React.FC = () => {
       setShowLoginModal(true);
     } finally {
       setDemoLoading(false);
+    }
+  };
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setForgotLoading(true);
+    setForgotErrorMsg(null);
+    setForgotSuccessMsg(null);
+    try {
+      if (!email.trim()) {
+        throw new Error('Please enter your hunter account email address.');
+      }
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || 'Could not dispatch verification code.');
+      }
+      setForgotSuccessMsg(data.message || 'OTP verification code has been dispatched to your email.');
+      if (data.debug_otp) {
+        setDebugOtpNotice(data.debug_otp);
+      }
+      setForgotStep('otp');
+    } catch (err: any) {
+      setForgotErrorMsg(err?.message || 'Failed to dispatch verification code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setForgotLoading(true);
+    setForgotErrorMsg(null);
+    setForgotSuccessMsg(null);
+
+    if (!otpCode.trim()) {
+      setForgotErrorMsg('Please enter the 6-digit OTP code received on your email.');
+      setForgotLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setForgotErrorMsg('New password must be at least 8 characters long.');
+      setForgotLoading(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setForgotErrorMsg('Passwords do not match. Please verify and re-enter.');
+      setForgotLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          otp: otpCode.trim(),
+          new_password: newPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error?.message || 'Failed to reset password.');
+      }
+
+      setForgotSuccessMsg('Password successfully updated! Returning to login...');
+      setTimeout(() => {
+        setIsForgotPassword(false);
+        setForgotStep('email');
+        setOtpCode('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPassword('');
+        setForgotSuccessMsg(null);
+        setForgotErrorMsg(null);
+      }, 1600);
+    } catch (err: any) {
+      setForgotErrorMsg(err?.message || 'Failed to reset password.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -578,10 +680,27 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Login Modal */}
+      {/* Login & Security Modal */}
       {showLoginModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-purple-300 bg-white p-6 shadow-2xl dark:border-purple-900 dark:bg-[#0c0618]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="relative w-full max-w-sm rounded-2xl border border-purple-300/80 bg-white p-6 shadow-2xl dark:border-purple-800/80 dark:bg-[#0c0618] transition-all">
+            {/* Modal Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowLoginModal(false);
+                setIsForgotPassword(false);
+                setForgotStep('email');
+                setForgotErrorMsg(null);
+                setForgotSuccessMsg(null);
+                setLoginError(null);
+              }}
+              className="absolute right-4 top-4 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-purple-950/60 dark:hover:text-purple-300 transition"
+              title="Close dialog"
+            >
+              ✕
+            </button>
+
             <div className="flex items-center gap-3 mb-2">
               <div className="relative flex items-center justify-center">
                 <div className="absolute -inset-1 rounded-xl bg-purple-500/30 blur-sm" />
@@ -589,117 +708,315 @@ const AppContent: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-mono text-base font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  {isRegister ? 'Hunter Awakening' : 'Hunter Authorization'}
+                  {isForgotPassword
+                    ? 'Security Recovery'
+                    : isRegister
+                    ? 'Hunter Awakening'
+                    : 'Hunter Authorization'}
                 </h3>
                 <p className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
-                  Skill Leveling Gate System
+                  {isForgotPassword ? 'OTP Verification Gate' : 'Skill Leveling Gate System'}
                 </p>
               </div>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-mono">
-              {isRegister ? 'Register your hunter license to track ranks.' : 'Enter your credentials to enter the dungeon.'}
-            </p>
 
-            {/* Quick Demo Credentials Autofill Pill */}
-            {!isRegister && (
-              <div className="mb-3 space-y-2">
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  disabled={demoLoading}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 p-2.5 font-mono text-xs font-bold text-white shadow-md hover:from-purple-600 hover:to-indigo-500 transition disabled:opacity-60"
-                >
-                  {demoLoading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Zap className="h-3.5 w-3.5 text-amber-300" />
+            {/* FORGOT PASSWORD FLOW */}
+            {isForgotPassword ? (
+              <div className="space-y-3 font-mono text-xs">
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                  {forgotStep === 'email'
+                    ? 'Enter your registered email to receive a 6-digit verification code.'
+                    : `Enter the 6-digit OTP code sent to ${email} and your new password.`}
+                </p>
+
+                {forgotSuccessMsg && (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-2.5 text-xs text-emerald-800 dark:border-emerald-800/80 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <span>{forgotSuccessMsg}</span>
+                  </div>
+                )}
+
+                {forgotErrorMsg && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-700 dark:border-rose-900/80 dark:bg-rose-950/60 dark:text-rose-300 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    <span>{forgotErrorMsg}</span>
+                  </div>
+                )}
+
+                {/* STEP 1: Enter email for OTP dispatch */}
+                {forgotStep === 'email' ? (
+                  <form onSubmit={handleSendOtp} className="space-y-3">
+                    <div>
+                      <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                        Hunter Email Address
+                      </label>
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="hunter@leveling.net"
+                        className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={forgotLoading || !email.trim()}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 p-2.5 font-bold text-white shadow-md hover:bg-purple-700 transition disabled:opacity-50"
+                    >
+                      {forgotLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      ) : (
+                        <Mail className="h-4 w-4 text-purple-200" />
+                      )}
+                      <span>{forgotLoading ? 'Dispatching OTP...' : 'Send OTP to Email'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setForgotErrorMsg(null);
+                        setForgotSuccessMsg(null);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 p-2 text-center text-xs font-semibold text-slate-700 dark:border-purple-900/60 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <span>Back to Sign In</span>
+                    </button>
+                  </form>
+                ) : (
+                  /* STEP 2: Input OTP & New Password */
+                  <form onSubmit={handleResetPassword} className="space-y-3">
+                    {debugOtpNotice && (
+                      <div className="rounded-xl border border-purple-200/80 bg-purple-50/80 p-2 text-xs dark:border-purple-800/80 dark:bg-purple-950/50 flex items-center justify-between">
+                        <span className="font-mono text-[10px] text-purple-800 dark:text-purple-300">
+                          Dev Code: <strong>{debugOtpNotice}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setOtpCode(debugOtpNotice)}
+                          className="rounded bg-purple-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-purple-500 transition"
+                        >
+                          Fill OTP
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                        6-Digit Email OTP Code
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                        placeholder="123456"
+                        className="w-full text-center font-mono text-lg font-black tracking-widest rounded-lg border border-purple-300 bg-purple-50/40 px-3 py-2 text-purple-900 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-200 outline-none focus:border-purple-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                        New Password (Min 8 chars)
+                      </label>
+                      <input
+                        type="password"
+                        minLength={8}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        minLength={8}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={forgotLoading || !otpCode.trim() || newPassword.length < 8}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 p-2.5 font-bold text-white shadow-md hover:bg-purple-700 transition disabled:opacity-50"
+                    >
+                      {forgotLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      ) : (
+                        <KeyRound className="h-4 w-4 text-purple-200" />
+                      )}
+                      <span>{forgotLoading ? 'Updating Password...' : 'Verify OTP & Reset'}</span>
+                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotStep('email');
+                          setForgotErrorMsg(null);
+                        }}
+                        className="flex-1 rounded-xl border border-slate-200 p-2 text-center text-xs font-semibold text-slate-700 dark:border-purple-900/60 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                      >
+                        Resend Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsForgotPassword(false);
+                          setForgotStep('email');
+                          setForgotErrorMsg(null);
+                          setForgotSuccessMsg(null);
+                        }}
+                        className="flex-1 rounded-xl border border-slate-200 p-2 text-center text-xs font-semibold text-slate-700 dark:border-purple-900/60 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                      >
+                        Sign in
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            ) : (
+              /* STANDARD LOGIN / REGISTRATION FLOW */
+              <>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 font-mono">
+                  {isRegister ? 'Register your hunter license to track ranks.' : 'Enter your credentials to enter the dungeon.'}
+                </p>
+
+                {/* Quick Demo Credentials Autofill Pill */}
+                {!isRegister && (
+                  <div className="mb-3 space-y-2">
+                    <button
+                      type="button"
+                      onClick={handleDemoLogin}
+                      disabled={demoLoading}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 p-2.5 font-mono text-xs font-bold text-white shadow-md hover:from-purple-600 hover:to-indigo-500 transition disabled:opacity-60"
+                    >
+                      {demoLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Zap className="h-3.5 w-3.5 text-amber-300" />
+                      )}
+                      {demoLoading ? 'Authorizing Demo Hunter...' : '⚡ 1-Click Demo Login (Instant)'}
+                    </button>
+                    <div className="rounded-xl border border-purple-200/80 bg-purple-50/70 p-2 text-xs dark:border-purple-900/60 dark:bg-purple-950/40 flex items-center justify-between">
+                      <span className="font-mono text-[10px] text-purple-700 dark:text-purple-300">
+                        Credentials: demo@example.com / password123
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('demo@example.com');
+                          setPassword('password123');
+                        }}
+                        className="rounded bg-purple-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-purple-500 transition"
+                      >
+                        Fill
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {loginError && (
+                  <div className="mb-3 rounded-lg bg-rose-50 p-2.5 text-xs text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                    {loginError}
+                  </div>
+                )}
+
+                <form onSubmit={handleLogin} className="space-y-3 font-mono text-xs">
+                  {isRegister && (
+                    <div>
+                      <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Hunter Name</label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        minLength={2}
+                        maxLength={100}
+                        autoComplete="name"
+                        placeholder="Sung Jin-woo"
+                        className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                        required
+                      />
+                    </div>
                   )}
-                  {demoLoading ? 'Authorizing Demo Hunter...' : '⚡ 1-Click Demo Login (Instant)'}
-                </button>
-                <div className="rounded-xl border border-purple-200/80 bg-purple-50/70 p-2 text-xs dark:border-purple-900/60 dark:bg-purple-950/40 flex items-center justify-between">
-                  <span className="font-mono text-[10px] text-purple-700 dark:text-purple-300">
-                    Credentials: demo@example.com / password123
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('demo@example.com');
-                      setPassword('password123');
-                    }}
-                    className="rounded bg-purple-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-purple-500 transition"
-                  >
-                    Fill
-                  </button>
-                </div>
-              </div>
+                  <div>
+                    <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Email Address</label>
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="hunter@leveling.net"
+                      className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Password</label>
+                    <input
+                      type="password"
+                      minLength={isRegister ? 8 : undefined}
+                      autoComplete={isRegister ? 'new-password' : 'current-password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
+                      required
+                    />
+                    {!isRegister && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsForgotPassword(true);
+                            setForgotStep('email');
+                            setForgotErrorMsg(null);
+                            setForgotSuccessMsg(null);
+                            setDebugOtpNotice(null);
+                            setLoginError(null);
+                          }}
+                          className="text-[11px] font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:underline transition"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsRegister(!isRegister);
+                        setLoginError(null);
+                      }}
+                      className="flex-1 rounded-xl border border-slate-200 dark:border-purple-900/60 p-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                    >
+                      {isRegister ? 'Sign in' : 'Create License'}
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-xl bg-purple-600 p-2 font-bold text-white shadow-md hover:bg-purple-700 transition"
+                    >
+                      {isRegister ? 'Awaken' : 'Authorize'}
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
-
-            {loginError && (
-              <div className="mb-3 rounded-lg bg-rose-50 p-2.5 text-xs text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
-                {loginError}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-3 font-mono text-xs">
-              {isRegister && (
-                <div>
-                  <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Hunter Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    minLength={2}
-                    maxLength={100}
-                    autoComplete="name"
-                    placeholder="Sung Jin-woo"
-                    className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
-                    required
-                  />
-                </div>
-              )}
-              <div>
-                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Email Address</label>
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="hunter@leveling.net"
-                  className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1 block font-bold text-slate-700 dark:text-slate-300">Password</label>
-                <input
-                  type="password"
-                  minLength={isRegister ? 8 : undefined}
-                  autoComplete={isRegister ? 'new-password' : 'current-password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 text-sm text-slate-900 dark:border-purple-900 dark:text-white outline-none focus:border-purple-500"
-                  required
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRegister(!isRegister);
-                    setLoginError(null);
-                  }}
-                  className="flex-1 rounded-xl border border-slate-200 dark:border-purple-900/60 p-2 text-center text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-purple-950/40"
-                >
-                  {isRegister ? 'Sign in' : 'Create License'}
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-purple-600 p-2 font-bold text-white shadow-md hover:bg-purple-700 transition"
-                >
-                  {isRegister ? 'Awaken' : 'Authorize'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
