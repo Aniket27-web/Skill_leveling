@@ -22,6 +22,10 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     if isinstance(dbapi_connection, sqlite3.Connection):
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA cache_size=-64000")
+        cursor.execute("PRAGMA temp_store=MEMORY")
         cursor.close()
 
 
@@ -49,16 +53,24 @@ def init_db() -> None:
             "experience_level": "VARCHAR(20) NOT NULL DEFAULT 'fresher'",
             "duration_minutes": "INTEGER NULL",
         },
-        "resumes": {"profile": "JSON NULL"},
+        "questions": {
+            "category": "VARCHAR(50) NOT NULL DEFAULT 'general'",
+            "shown_at": "TIMESTAMP NULL",
+            "eval_status": "VARCHAR(20) NOT NULL DEFAULT 'pending'",
+            "score": "FLOAT NULL",
+            "dimensions": "JSON NULL",
+            "strengths": "JSON NULL",
+            "improvements": "JSON NULL",
+            "missed_points": "JSON NULL",
+            "ideal_outline": "JSON NULL",
+        },
     }
-    inspector = inspect(engine)
-    tables = set(inspector.get_table_names())
-    with engine.begin() as connection:
-        for table, columns_to_add in migrations.items():
-            if table not in tables:
+    with engine.begin() as conn:
+        inspector = inspect(conn)
+        for table, cols in migrations.items():
+            if table not in inspector.get_table_names():
                 continue
-            current_columns = {column["name"] for column in inspector.get_columns(table)}
-            for column_name, definition in columns_to_add.items():
-                if column_name not in current_columns:
-                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {column_name} {definition}"))
-
+            existing = {c["name"] for c in inspector.get_columns(table)}
+            for col_name, col_def in cols.items():
+                if col_name not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_def}"))

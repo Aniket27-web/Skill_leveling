@@ -63,3 +63,6 @@ dist-ssr/
 # Avatar video temporary outputs
 backend/avatar_outputs/
 *.mp4
+
+*.db-shm
+*.db-wal

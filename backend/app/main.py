@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.errors import register_exception_handlers
@@ -30,6 +31,9 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+
+# High-performance GZip compression (reduces JSON payload size by 70–85%)
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # CORS Middleware (allows frontend at http://localhost:5173 with credentials)
 app.add_middleware(

@@ -20,14 +20,30 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    cssMinify: true,
+    reportCompressedSize: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('/node_modules/three/')) return 'three-core';
-          if (id.includes('/node_modules/three-stdlib/')) return 'three-stdlib';
-          if (id.includes('/node_modules/@react-three/fiber/')) return 'react-three-fiber';
-          if (id.includes('/node_modules/@react-three/drei/')) return 'react-three-drei';
-          if (id.includes('/node_modules/@pixiv/three-vrm/')) return 'three-vrm';
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'vendor-query';
+            }
+            if (id.includes('three') || id.includes('@react-three') || id.includes('@pixiv')) {
+              return 'vendor-three';
+            }
+          }
         },
       },
     },
@@ -38,4 +54,3 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
   },
 });
-
