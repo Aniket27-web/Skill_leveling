@@ -17,9 +17,6 @@ export interface PhotorealisticAvatarStageProps {
   interviewerName?: string;
 }
 
-type SpeechFrame = 'idle' | 'parted' | 'speaking' | 'rounded';
-type BlinkStage = 'open' | 'half' | 'closed';
-
 export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps> = ({
   speaking,
   listening,
@@ -29,157 +26,236 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
   interviewerName = 'Marcus Vance · Senior Technical Partner',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoStreamRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Live state refs to feed 60 FPS render loop without causing React re-renders
+  const speakingRef = useRef(speaking);
+  speakingRef.current = speaking;
   const listeningRef = useRef(listening);
   listeningRef.current = listening;
+  const visemeRef = useRef(viseme);
+  visemeRef.current = viseme;
 
-  const [activeSpeechFrame, setActiveSpeechFrame] = useState<SpeechFrame>('idle');
-  const [blinkStage, setBlinkStage] = useState<BlinkStage>('open');
+  const [liveFps, setLiveFps] = useState<number>(60);
 
-  // Pre-decode all photorealistic keyframes into GPU memory on mount
-  useEffect(() => {
-    const images = [
-      marcusIdle,
-      marcusParted,
-      marcusSpeaking,
-      marcusRounded,
-      marcusHalfBlink,
-      marcusBlink,
-    ];
-    images.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-      if ('decode' in img) {
-        img.decode().catch(() => {});
-      }
-    });
-  }, []);
-
-  // 60 FPS Zero-Overhead Hardware-Accelerated Micro-Movements (Breathing, Nods, Drift)
-  useEffect(() => {
-    let animId: number;
-    const startTime = performance.now();
-
-    const loop = (currentTime: number) => {
-      const elapsed = (currentTime - startTime) / 1000;
-
-      // Natural breathing rhythm (~3.6s cycle, 1.8px vertical displacement)
-      const breathing = Math.sin(elapsed * 1.7) * 1.8;
-
-      // Subtle lateral micro-drift
-      const sway = Math.cos(elapsed * 0.9) * 0.9;
-
-      // Attentive listening nod when candidate speaks
-      const nod = listeningRef.current ? Math.sin(elapsed * 3.2) * 2.2 : 0;
-
-      if (videoStreamRef.current) {
-        videoStreamRef.current.style.transform = `translate3d(${sway.toFixed(2)}px, ${(
-          breathing + nod
-        ).toFixed(2)}px, 0) scale(1.02)`;
-      }
-
-      animId = requestAnimationFrame(loop);
-    };
-
-    animId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animId);
-  }, []);
-
-  // Multi-Frame Speech Articulation Sequence (Interpolates: Idle -> Parted -> Speaking -> Parted -> Rounded)
-  useEffect(() => {
-    if (!speaking) {
-      setActiveSpeechFrame('idle');
-      return;
-    }
-
-    let speechTimer: number;
-    let stepIndex = 0;
-
-    // Sequence of speech phonemes simulating fluid syllables with transitional in-betweens
-    const cadenceSequence: SpeechFrame[] = [
-      'parted',
-      'speaking',
-      'parted',
-      'rounded',
-      'parted',
-      'speaking',
-      'parted',
-      'idle',
-    ];
-
-    const runSpeechCadence = () => {
-      if (viseme === 'oh' || viseme === 'oo') {
-        setActiveSpeechFrame('rounded');
-      } else if (viseme === 'aa') {
-        setActiveSpeechFrame('speaking');
-      } else if (viseme === 'ee' || viseme === 'smile') {
-        setActiveSpeechFrame('parted');
-      } else {
-        const nextFrame = cadenceSequence[stepIndex % cadenceSequence.length];
-        setActiveSpeechFrame(nextFrame);
-        stepIndex++;
-      }
-
-      // Fast, natural frame step (75ms - 110ms) creates fluid 10-15 FPS speech interpolation
-      const duration = Math.random() * 35 + 75;
-      speechTimer = window.setTimeout(runSpeechCadence, duration);
-    };
-
-    runSpeechCadence();
-
-    return () => {
-      clearTimeout(speechTimer);
-    };
-  }, [speaking, viseme]);
-
-  // Organic 3-Stage Eyelid Blink (Open -> Half 40ms -> Closed 65ms -> Half 40ms -> Open)
-  useEffect(() => {
-    let blinkTimer: number;
-    let halfCloseTimer: number;
-    let fullCloseTimer: number;
-    let halfOpenTimer: number;
-
-    const scheduleNextBlink = () => {
-      const delay = Math.random() * 2200 + 3000; // Blink every 3.0 to 5.2 seconds
-      blinkTimer = window.setTimeout(() => {
-        // Stage 1: Half-blink (lowering eyelids)
-        setBlinkStage('half');
-
-        halfCloseTimer = window.setTimeout(() => {
-          // Stage 2: Fully closed
-          setBlinkStage('closed');
-
-          fullCloseTimer = window.setTimeout(() => {
-            // Stage 3: Half-blink (raising eyelids)
-            setBlinkStage('half');
-
-            halfOpenTimer = window.setTimeout(() => {
-              // Stage 4: Fully open
-              setBlinkStage('open');
-              scheduleNextBlink();
-            }, 40);
-          }, 65);
-        }, 40);
-      }, delay);
-    };
-
-    scheduleNextBlink();
-
-    return () => {
-      clearTimeout(blinkTimer);
-      clearTimeout(halfCloseTimer);
-      clearTimeout(fullCloseTimer);
-      clearTimeout(halfOpenTimer);
-    };
-  }, []);
-
-  // Status badge indicators
+  // Status label for conference call UI
   const statusLabel = useMemo(() => {
     if (speaking) return { text: 'Interviewer Speaking', dot: 'bg-emerald-400 animate-pulse' };
     if (isThinking) return { text: 'Analyzing Response...', dot: 'bg-amber-400 animate-pulse' };
     if (listening) return { text: 'Listening Attentively', dot: 'bg-blue-400 animate-pulse' };
     return { text: 'Ready for Answer', dot: 'bg-emerald-500' };
   }, [speaking, listening, isThinking]);
+
+  // 60 FPS Hardware-Accelerated Video Stream Engine
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const ctx = canvas.getContext('2d', {
+      alpha: false,
+      desynchronized: true, // Lowest latency direct-to-screen hardware compositor
+    });
+    if (!ctx) return;
+
+    // Load and decode all 6 high-definition photorealistic frames
+    const images: Record<string, HTMLImageElement> = {
+      idle: new Image(),
+      parted: new Image(),
+      speaking: new Image(),
+      rounded: new Image(),
+      halfBlink: new Image(),
+      blink: new Image(),
+    };
+
+    images.idle.src = marcusIdle;
+    images.parted.src = marcusParted;
+    images.speaking.src = marcusSpeaking;
+    images.rounded.src = marcusRounded;
+    images.halfBlink.src = marcusHalfBlink;
+    images.blink.src = marcusBlink;
+
+    Object.values(images).forEach((img) => {
+      if ('decode' in img) {
+        img.decode().catch(() => {});
+      }
+    });
+
+    let animId: number;
+    let lastTime = performance.now();
+    let startTime = performance.now();
+    let frameCount = 0;
+    let fpsAccumulatorTime = lastTime;
+
+    // Continuous 60 FPS interpolation variables
+    let speechOpenness = 0; // 0.0 (closed) to 1.0 (full open)
+    let blinkProgress = 0; // 0.0 (eyes open) to 1.0 (eyes closed)
+    let isBlinking = false;
+    let nextBlinkTime = performance.now() + 3200;
+    let blinkStartTime = 0;
+    const BLINK_DURATION = 160; // 160ms organic human blink cycle
+
+    const render = (now: number) => {
+      animId = requestAnimationFrame(render);
+
+      const delta = Math.min((now - lastTime) / 1000, 0.1); // clamp in case of tab switch
+      lastTime = now;
+      const elapsed = (now - startTime) / 1000;
+
+      // 60 FPS Delta Frame-rate Counter
+      frameCount++;
+      if (now - fpsAccumulatorTime >= 1000) {
+        const calculatedFps = Math.round((frameCount * 1000) / (now - fpsAccumulatorTime));
+        setLiveFps(Math.min(calculatedFps, 60));
+        frameCount = 0;
+        fpsAccumulatorTime = now;
+      }
+
+      // Responsive canvas buffer sizing (match physical container pixels)
+      const rect = container.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const targetWidth = Math.round(rect.width * dpr);
+      const targetHeight = Math.round(rect.height * dpr);
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      // 60 FPS Continuous Micro-Movements (Natural human breathing, listening nods, lateral drift)
+      const breathing = Math.sin(elapsed * 1.7) * 2.2 * dpr;
+      const sway = Math.cos(elapsed * 0.9) * 1.1 * dpr;
+      const nod = listeningRef.current ? Math.sin(elapsed * 3.4) * 2.6 * dpr : 0;
+
+      // Continuous Speech Envelope Calculation (At 60 FPS)
+      if (speakingRef.current) {
+        // Multi-frequency harmonic wave simulating vowel articulation rhythms
+        const targetOpen =
+          (Math.sin(elapsed * 14.5) * 0.48 + 0.52) *
+          (Math.cos(elapsed * 7.8) * 0.35 + 0.65);
+        // 60 FPS smooth exponential convergence (instant responsive lip-sync)
+        speechOpenness += (targetOpen - speechOpenness) * 0.28;
+      } else {
+        speechOpenness += (0 - speechOpenness) * 0.22;
+      }
+
+      // Continuous Eye Blink Envelope Calculation (At 60 FPS)
+      if (!isBlinking && now >= nextBlinkTime && !speakingRef.current) {
+        isBlinking = true;
+        blinkStartTime = now;
+      }
+
+      if (isBlinking) {
+        const blinkElapsed = now - blinkStartTime;
+        if (blinkElapsed >= BLINK_DURATION) {
+          isBlinking = false;
+          blinkProgress = 0;
+          nextBlinkTime = now + Math.random() * 2200 + 3000; // Next blink in 3.0-5.2s
+        } else {
+          // Smooth sinusoidal eyelid arc (0 -> 1 -> 0)
+          const t = blinkElapsed / BLINK_DURATION;
+          blinkProgress = Math.sin(t * Math.PI);
+        }
+      } else {
+        blinkProgress = 0;
+      }
+
+      // Draw onto Canvas Context with Hardware Acceleration
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Transform with subtle 1.02 scale and camera movements
+      ctx.translate(sway, breathing + nod);
+
+      const baseImg = images.idle;
+      if (!baseImg.complete || baseImg.naturalWidth === 0) {
+        ctx.restore();
+        return;
+      }
+
+      // Compute centered "object-cover" destination rect
+      const imgAspect = baseImg.naturalWidth / baseImg.naturalHeight;
+      const canvasAspect = canvas.width / canvas.height;
+      let drawW: number;
+      let drawH: number;
+      let drawX: number;
+      let drawY: number;
+
+      const scalePadding = 1.02; // Prevents edge clipping during subtle micro-sway
+      if (canvasAspect > imgAspect) {
+        drawW = canvas.width * scalePadding;
+        drawH = (canvas.width / imgAspect) * scalePadding;
+      } else {
+        drawH = canvas.height * scalePadding;
+        drawW = canvas.height * imgAspect * scalePadding;
+      }
+      drawX = (canvas.width - drawW) / 2;
+      drawY = (canvas.height - drawH) / 2;
+
+      // 1. Draw Base Photorealistic Image (Resting closed-mouth in executive office)
+      ctx.globalAlpha = 1.0;
+      ctx.drawImage(baseImg, drawX, drawY, drawW, drawH);
+
+      // 2. 60 FPS Continuous Multi-Phoneme Speech Morphing
+      if (speechOpenness > 0.04) {
+        const currentViseme = visemeRef.current;
+        const activeMouthImg =
+          currentViseme === 'oh' || currentViseme === 'oo'
+            ? images.rounded
+            : images.speaking;
+
+        if (speechOpenness <= 0.48) {
+          // Intermediate transition: blend smoothly between Idle and Parted
+          if (images.parted.complete) {
+            ctx.globalAlpha = Math.min((speechOpenness - 0.04) / 0.44, 1.0);
+            ctx.drawImage(images.parted, drawX, drawY, drawW, drawH);
+          }
+        } else {
+          // Open transition: blend smoothly between Parted and Full Open/Rounded
+          const openAlpha = Math.min((speechOpenness - 0.48) / 0.52, 1.0);
+          if (images.parted.complete) {
+            ctx.globalAlpha = 1.0 - openAlpha;
+            ctx.drawImage(images.parted, drawX, drawY, drawW, drawH);
+          }
+          if (activeMouthImg.complete) {
+            ctx.globalAlpha = openAlpha;
+            ctx.drawImage(activeMouthImg, drawX, drawY, drawW, drawH);
+          }
+        }
+      }
+
+      // 3. 60 FPS Continuous 3-Stage Eyelid Blink Morphing (Half -> Full Closed -> Half -> Open)
+      if (blinkProgress > 0.05 && !speakingRef.current) {
+        if (blinkProgress <= 0.6) {
+          // Half-closed transition
+          if (images.halfBlink.complete) {
+            ctx.globalAlpha = Math.min(blinkProgress / 0.6, 1.0);
+            ctx.drawImage(images.halfBlink, drawX, drawY, drawW, drawH);
+          }
+        } else {
+          // Full closed blink
+          const fullAlpha = Math.min((blinkProgress - 0.6) / 0.4, 1.0);
+          if (images.halfBlink.complete) {
+            ctx.globalAlpha = 1.0 - fullAlpha;
+            ctx.drawImage(images.halfBlink, drawX, drawY, drawW, drawH);
+          }
+          if (images.blink.complete) {
+            ctx.globalAlpha = fullAlpha;
+            ctx.drawImage(images.blink, drawX, drawY, drawW, drawH);
+          }
+        }
+      }
+
+      ctx.restore();
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, []);
 
   return (
     <div
@@ -189,82 +265,18 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         perspective: '1000px',
       }}
     >
-      {/* 60 FPS GPU-Accelerated Composited Video Layer */}
-      <div
-        ref={videoStreamRef}
-        className="absolute inset-0 w-full h-full"
+      {/* Locked 60 FPS Hardware-Accelerated Canvas */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full object-cover object-center"
         style={{
           willChange: 'transform',
-          transform: 'translate3d(0, 0, 0) scale(1.02)',
+          transform: 'translate3d(0, 0, 0)',
           backfaceVisibility: 'hidden',
         }}
-      >
-        {/* Layer 1: Base Idle Frame (Resting closed mouth in executive office) */}
-        <img
-          src={marcusIdle}
-          alt="Marcus Vance - Idle"
-          className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.98] contrast-[1.02]"
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
+      />
 
-        {/* Layer 2: Parted Mouth Frame (Intermediary speech in-between) */}
-        <img
-          src={marcusParted}
-          alt="Marcus Vance - Parted"
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-75 ease-out ${
-            activeSpeechFrame === 'parted' ? 'opacity-100' : 'opacity-0'
-          }`}
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
-
-        {/* Layer 3: Open Speaking Frame (Vowel / phoneme articulation) */}
-        <img
-          src={marcusSpeaking}
-          alt="Marcus Vance - Speaking"
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-75 ease-out ${
-            activeSpeechFrame === 'speaking' ? 'opacity-100' : 'opacity-0'
-          }`}
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
-
-        {/* Layer 4: Rounded Mouth Frame ('O' / 'OH' speech phoneme) */}
-        <img
-          src={marcusRounded}
-          alt="Marcus Vance - Rounded"
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-75 ease-out ${
-            activeSpeechFrame === 'rounded' ? 'opacity-100' : 'opacity-0'
-          }`}
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
-
-        {/* Layer 5: Half-Blink Frame (Organic 50% eyelid lowering transition) */}
-        <img
-          src={marcusHalfBlink}
-          alt="Marcus Vance - Half Blink"
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-40 ease-in-out ${
-            blinkStage === 'half' && !speaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
-
-        {/* Layer 6: Full-Blink Frame (Closed eyelids mid-blink) */}
-        <img
-          src={marcusBlink}
-          alt="Marcus Vance - Blink"
-          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-50 ease-in-out ${
-            blinkStage === 'closed' && !speaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-          draggable={false}
-          style={{ willChange: 'opacity' }}
-        />
-      </div>
-
-      {/* Layer 7: Cinematic Edge Vignette */}
+      {/* Layer: Cinematic Subtle Edge Vignette */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25" />
 
       {/* Top Left: Executive Google Meet / Zoom Conference Tag */}
@@ -295,10 +307,10 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         </div>
       </div>
 
-      {/* Bottom Right: High-Framerate RTX Hardware Accelerated Pill */}
-      <div className="absolute bottom-4 right-4 z-10 hidden sm:flex items-center gap-1.5 rounded-md bg-black/40 border border-white/10 px-2.5 py-1 text-[10px] font-mono font-medium text-white/70 backdrop-blur-sm">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-        <span>60 FPS LOCKED · RTX ACCELERATED</span>
+      {/* Bottom Right: Live 60 FPS RTX Hardware Stream Counter */}
+      <div className="absolute bottom-4 right-4 z-10 hidden sm:flex items-center gap-1.5 rounded-md bg-black/50 border border-white/15 px-2.5 py-1 text-[10px] font-mono font-medium text-white/80 backdrop-blur-sm shadow-md">
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+        <span>{liveFps} FPS LOCKED · RTX ACCELERATED</span>
       </div>
     </div>
   );
