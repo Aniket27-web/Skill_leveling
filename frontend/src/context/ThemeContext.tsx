@@ -20,7 +20,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const saved = localStorage.getItem('skill_leveling_theme');
       if (saved === 'light' || saved === 'dark') return saved;
     }
-    // Default to Solo Leveling dark mode
+    // Default to Skill Leveling dark mode
     return 'dark';
   });
 

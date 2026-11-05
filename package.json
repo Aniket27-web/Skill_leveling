@@ -2,7 +2,7 @@
   "name": "skill-leveling",
   "version": "1.0.0",
   "private": true,
-  "description": "Skill Leveling - Solo Leveling Inspired AI Technical Interview Arena",
+  "description": "Skill Leveling - AI Technical Interview & Hunter Arena",
   "scripts": {
     "start": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",
     "dev": "concurrently -k -p \"[{name}]\" -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",

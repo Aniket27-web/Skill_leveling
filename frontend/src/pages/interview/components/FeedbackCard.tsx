@@ -109,7 +109,7 @@ export const FeedbackCard: React.FC<FeedbackCardProps> = ({
       className="rounded-2xl border border-purple-200 bg-white p-6 shadow-sm space-y-6 transition-all dark:border-purple-900/60 dark:bg-[#0d071a]"
       data-testid="feedback-card"
     >
-      {/* Solo Leveling Hunter Level Delta Banner */}
+      {/* Hunter Level Delta Banner */}
       {deltaInfo && (
         <div
           className={`flex items-center justify-between rounded-xl border p-4 transition-all ${

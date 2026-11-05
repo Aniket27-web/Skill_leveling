@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-**Skill Leveling (AI Mock Interview Coach)** is a full-stack, AI-orchestrated technical interview platform designed to bridge the gap between technical preparation and interview performance. Inspired by the gamified progression mechanics of *Solo Leveling*, the platform evaluates candidates across progressive difficulty tiers (Easy Dungeons, Medium Raids, Hard Gates), calculates calibrated multi-dimensional scores (0–10), enforces strict score penalties for subpar answers, and tracks user rank progression from **E-Rank Weakest** to **S-Rank Sovereign**.
+**Skill Leveling (AI Mock Interview Coach)** is a full-stack, AI-orchestrated technical interview platform designed to bridge the gap between technical preparation and interview performance. Featuring gamified progression mechanics, the platform evaluates candidates across progressive difficulty tiers (Easy Dungeons, Medium Raids, Hard Gates), calculates calibrated multi-dimensional scores (0–10), enforces strict score penalties for subpar answers, and tracks user rank progression from **E-Rank Weakest** to **S-Rank Sovereign**.
 
 The application features multi-modal interactions including real-time text chat, audio calls with speech synthesis/recognition, a 3D avatar with viseme lip synchronization, server-authoritative timers, and high-fidelity vector PDF evaluation reports.
 
@@ -18,7 +18,7 @@ graph TD
         UI["UI Layer (Tailwind CSS, Lucide Icons)"]
         State["Client State (TanStack Query, React Context)"]
         Media["Media & Voice Engine (Web Speech API, Three.js VRM)"]
-        SoloLevelingEngine["Hunter State Engine (0-100 Level, Ranks E-S)"]
+        SkillLevelingEngine["Hunter State Engine (0-100 Level, Ranks E-S)"]
     end
 
     subgraph Gateway["Reverse Proxy / API Gateway"]
@@ -47,8 +47,8 @@ graph TD
 
     UI --> State
     UI --> Media
-    UI --> SoloLevelingEngine
-    SoloLevelingEngine --> BrowserStorage
+    UI --> SkillLevelingEngine
+    SkillLevelingEngine --> BrowserStorage
     Media --> BrowserStorage
 
     State --> ViteProxy
@@ -72,7 +72,7 @@ graph TD
 
 ### 3.1. Frontend Architecture
 - **Framework & Build**: React 18, Vite 5, TypeScript.
-- **Styling & Theming**: Tailwind CSS with custom Solo Leveling color palette (Mana purple `#9333ea`, dark dungeon `#07030e`, and radiant light mode).
+- **Styling & Theming**: Tailwind CSS with custom Skill Leveling color palette (Mana purple `#9333ea`, dark dungeon `#07030e`, and radiant light mode).
 - **Global Error Boundary**: Custom React class-based `<ErrorBoundary>` that intercepts runtime exceptions, prevents blank screen failures, and provides one-click recovery.
 - **State Management**:
   - **Server State**: `@tanstack/react-query` handles caching, background polling, and optimistic mutations.
@@ -105,7 +105,7 @@ graph TD
 
 ---
 
-## 4. Solo Leveling Gamification Layer
+## 4. Hunter Rank Gamification Layer
 
 ```mermaid
 stateDiagram-v2

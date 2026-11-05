@@ -1,7 +1,7 @@
 # ⚔️ Skill Leveling: AI Mock Interview Coach
 
 > **Rise from E-Rank Weakest to S-Rank Sovereign.**  
-> An AI-powered technical mock interview platform inspired by *Solo Leveling*, featuring resume-grounded questions, multi-modal interaction (Text, Audio, and 3D Avatar Video), multi-dimensional scoring (0–10), real-time delivery analytics, dynamic 1/3 score penalties, and downloadable publication-grade PDF evaluation reports.
+> An AI-powered technical mock interview platform featuring gamified Hunter rank progression, resume-grounded questions, multi-modal interaction (Text, Audio, and 3D Avatar Video), multi-dimensional scoring (0–10), real-time delivery analytics, dynamic 1/3 score penalties, and downloadable publication-grade PDF evaluation reports.
 
 ---
 
@@ -76,7 +76,7 @@ All system documentation, diagrams, specifications, and evaluation guides are or
   - **Text Mode**: Traditional keyboard-driven technical chat with keyboard shortcuts (`Ctrl+Enter`) and draft preservation.
   - **Audio Call Mode**: Reads questions aloud with speech synthesis, offers live audio waveforms, and transcribes voice answers.
   - **Video Call Mode**: Features a 3D animated avatar with viseme lip sync, local camera preview, and an interactive audibility check (*"Am I audible?"*).
-- **Solo Leveling Gamification**:
+- **Gamified Hunter Progression**:
   - Level range: **0.0 to 100.0**
   - Hunter Ranks: **E-Rank** (Level 0–19), **D-Rank** (20–34), **C-Rank** (35–54), **B-Rank** (55–74), **A-Rank** (75–89), **S-Rank** (90–100).
   - Rewards and penalties: Correct answers ($\ge 7/10$) award positive levels (+6, +10, or +15); subpar answers trigger a **1/3 score penalty** (-2.0, -3.3, or -5.0).

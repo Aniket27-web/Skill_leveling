@@ -1,5 +1,5 @@
 /**
- * Skill Leveling - Solo Leveling Inspired Hunter Ranking & Scoring Engine
+ * Skill Leveling - Hunter Ranking & Leveling Scoring Engine
  *
  * Hunter Ranks:
  *  - S-Rank (National / Monarch Level): Level 90 - 100

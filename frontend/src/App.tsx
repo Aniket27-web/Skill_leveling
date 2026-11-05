@@ -22,6 +22,7 @@ import {
   Award,
   ArrowRight,
   Target,
+  Settings,
 } from 'lucide-react';
 import { clearAISettings } from './api/aiSettings';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -32,7 +33,8 @@ import logoImg from './assests/logo/Skill Leveling Growth Emblem.png';
 const InterviewPage = lazy(() => import('./pages/interview/InterviewPage').then((module) => ({ default: module.InterviewPage })));
 const SummaryPage = lazy(() => import('./pages/summary/SummaryPage').then((module) => ({ default: module.SummaryPage })));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then((module) => ({ default: module.DashboardPage })));
-const AISettingsPage = lazy(() => import('./pages/settings/AISettingsPage').then((module) => ({ default: module.AISettingsPage })));
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+const AISettingsPage = lazy(() => import('./pages/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -142,7 +144,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#07030e] dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* Solo Leveling Purple Global Header Navigation */}
+      {/* Skill Leveling Global Header Navigation */}
       <header className="sticky top-0 z-30 border-b border-purple-200 bg-white/90 backdrop-blur-md dark:border-purple-900/60 dark:bg-[#0a0515]/90">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center space-x-3 group">
@@ -163,7 +165,7 @@ const AppContent: React.FC = () => {
                   SYSTEM v1.2
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-purple-300/70 font-mono tracking-tight">
-                  Solo Leveling Technical Arena
+                  AI Technical Interview Arena
                 </span>
               </div>
             </div>
@@ -195,10 +197,11 @@ const AppContent: React.FC = () => {
                   Dungeon
                 </Link>
                 <Link
-                  to="/settings/ai"
-                  className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 dark:text-slate-300 dark:hover:bg-purple-950/50"
+                  to="/settings"
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-purple-50 dark:text-slate-300 dark:hover:bg-purple-950/50"
                 >
-                  AI Gateway
+                  <Settings className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                  Settings
                 </Link>
                 <div className="flex items-center space-x-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-900 border border-purple-200 dark:bg-purple-950/70 dark:border-purple-800 dark:text-purple-300 font-mono">
                   <User className="h-3 w-3 text-purple-600 dark:text-purple-400" />
@@ -287,7 +290,7 @@ const AppContent: React.FC = () => {
                           </span>
                         </h1>
                         <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg leading-relaxed text-slate-600 dark:text-purple-200/80">
-                          The premier technical interview arena inspired by <em>Solo Leveling</em>. Upload your resume, face adaptive AI challenges across Text, Audio, and 3D Video dungeons, and earn real hunter levels (0–100) with honest scoring and penalty stakes.
+                          The premier gamified technical interview arena. Upload your resume, face adaptive AI challenges across Text, Audio, and 3D Video dungeons, and earn real hunter levels (0–100) with honest scoring and penalty stakes.
                         </p>
 
                         {/* CTAs & 1-Click Demo */}
@@ -511,7 +514,8 @@ const AppContent: React.FC = () => {
               <Route path="/dashboard" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
               <Route path="/sessions/new" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
               <Route path="/history" element={currentUser ? <DashboardPage /> : <Navigate to="/" replace />} />
-              <Route path="/settings/ai" element={currentUser ? <AISettingsPage /> : <Navigate to="/" replace />} />
+              <Route path="/settings" element={currentUser ? <SettingsPage /> : <Navigate to="/" replace />} />
+              <Route path="/settings/ai" element={<Navigate to="/settings" replace />} />
               <Route path="/interview/:id" element={<InterviewPage />} />
               <Route path="/summary/:id" element={<SummaryPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -534,7 +538,7 @@ const AppContent: React.FC = () => {
                   {isRegister ? 'Hunter Awakening' : 'Hunter Authorization'}
                 </h3>
                 <p className="text-[10px] text-purple-600 dark:text-purple-400 font-mono">
-                  Solo Leveling Gate System
+                  Skill Leveling Gate System
                 </p>
               </div>
             </div>

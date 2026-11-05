@@ -139,7 +139,7 @@ export const SummaryPage: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8" data-testid="summary-page">
-      {/* Solo Leveling Hunter Status Bar */}
+      {/* Hunter Status Bar */}
       <HunterStatusBar />
 
       {/* Toast Alert for Download / Action Error */}

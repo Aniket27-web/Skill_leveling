@@ -5,6 +5,7 @@ import { BarChart3, FileText, Loader2, Plus, Trash2, UploadCloud, Shield, Flame,
 import { Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { HunterStatusBar } from '../../components/HunterStatusBar';
 import logoImg from '../../assests/logo/Skill Leveling Growth Emblem.png';
+import { loadUserPreferences } from '../settings/SettingsPage';
 
 type Resume = { id: string; filename: string; created_at: string; char_count?: number; preview?: string; profile?: { skills: string[]; technologies: string[]; projects: string[]; education: string[]; experience: string[] } | null };
 type SessionItem = {
@@ -29,23 +30,22 @@ const dateLabel = (date: string) => new Date(date).toLocaleDateString(undefined,
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const userPrefs = useMemo(() => loadUserPreferences(), []);
   const [file, setFile] = useState<File | null>(null);
   const [resumeId, setResumeId] = useState('');
-  const [difficulty, setDifficulty] = useState('medium');
-  const [numQuestions, setNumQuestions] = useState(5);
+  const [difficulty, setDifficulty] = useState<string>(userPrefs.defaultDifficulty || 'medium');
+  const [numQuestions, setNumQuestions] = useState(userPrefs.defaultNumQuestions || 5);
   const [targetRole, setTargetRole] = useState('');
   const [timerSeconds, setTimerSeconds] = useState('');
-  const [interviewMode, setInterviewMode] = useState<'text' | 'audio' | 'video'>('text');
+  const [interviewMode, setInterviewMode] = useState<'text' | 'audio' | 'video'>(userPrefs.defaultMode || 'text');
   const [interviewCategory, setInterviewCategory] = useState('mixed');
   const [experienceLevel, setExperienceLevel] = useState('fresher');
   const [durationMinutes, setDurationMinutes] = useState('');
-  const [noAIProviderNotice, setNoAIProviderNotice] = useState(false);
   const [formError, setFormError] = useState('');
 
   const resumesQuery = useQuery({ queryKey: ['resumes'], queryFn: () => api<Resume[]>('/api/resumes') });
   const sessionsQuery = useQuery({ queryKey: ['sessions', 50, 0], queryFn: () => api<SessionList>('/api/sessions?limit=50&offset=0') });
   const progressQuery = useQuery({ queryKey: ['progress'], queryFn: () => api<ProgressItem[]>('/api/progress') });
-  const aiSettingsQuery = useQuery({ queryKey: ['ai-settings'], queryFn: () => api<{ configured: boolean; provider?: string; model?: string }>('/api/ai-settings') });
 
   const uploadMutation = useMutation({
     mutationFn: async (resumeFile: File) => {
@@ -109,11 +109,6 @@ export const DashboardPage: React.FC = () => {
     ? completed.reduce((sum, session) => sum + (session.overall_score || 0), 0) / completed.length
     : null;
 
-  const beginSession = () => {
-    setNoAIProviderNotice(false);
-    createMutation.mutate();
-  };
-
   const handleStart = (event: FormEvent) => {
     event.preventDefault();
     setFormError('');
@@ -121,11 +116,7 @@ export const DashboardPage: React.FC = () => {
       setFormError('Upload or select a resume before starting a practice session.');
       return;
     }
-    if (!aiSettingsQuery.data?.configured) {
-      setNoAIProviderNotice(true);
-      return;
-    }
-    beginSession();
+    createMutation.mutate();
   };
 
   const handleUpload = () => {
@@ -136,7 +127,7 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-      {/* Solo Leveling Hunter Status Bar */}
+      {/* Hunter Status Bar */}
       <HunterStatusBar />
 
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -454,49 +445,6 @@ export const DashboardPage: React.FC = () => {
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-purple-500 dark:border-purple-800 dark:bg-[#180e30] dark:text-purple-100"
               />
             </div>
-
-            <div className="rounded-2xl border border-purple-200 p-4 dark:border-purple-900/60 dark:bg-[#120a24]">
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">System AI Provider</p>
-              {aiSettingsQuery.data?.configured ? (
-                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-                  Awakened with {aiSettingsQuery.data.provider} ({aiSettingsQuery.data.model}).
-                </p>
-              ) : (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-                  Using local demo provider. Configure provider & key in backend/.env for live LLM.
-                </p>
-              )}
-              <Link
-                to="/settings/ai"
-                className="mt-3 inline-flex rounded-lg border border-purple-200 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950"
-              >
-                AI Provider Settings
-              </Link>
-            </div>
-
-            {noAIProviderNotice && (
-              <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800/80 dark:bg-amber-950/40 dark:text-amber-200">
-                <p className="font-semibold">The server AI provider is not configured</p>
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
-                  Continuing now will use demo mode responses instead of live LLM questions. You can configure your provider in backend/.env.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={beginSession}
-                    className="rounded-lg bg-amber-900 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-800"
-                  >
-                    Continue in demo mode
-                  </button>
-                  <Link
-                    to="/settings/ai"
-                    className="rounded-lg border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200"
-                  >
-                    View provider status
-                  </Link>
-                </div>
-              </div>
-            )}
 
             {(formError || createMutation.error) && (
               <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-700 dark:bg-rose-950/50 dark:text-rose-300">

@@ -292,7 +292,7 @@ export const InterviewPage: React.FC = () => {
       setJustEvaluatedFeedback(response);
       setInterviewerResponse(response.interviewer_response || null);
 
-      // Solo Leveling Hunter level calculation & penalty
+      // Skill Leveling Hunter level calculation & penalty
       try {
         const { deltaInfo } = applyQuestionResultToHunter(response.score, session?.difficulty || 'medium');
         setLatestDelta(deltaInfo);
@@ -715,7 +715,7 @@ export const InterviewPage: React.FC = () => {
 
   return (
     <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-5 px-3 py-5 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
-      {/* Solo Leveling Hunter Status Bar */}
+      {/* Hunter Status Bar */}
       <HunterStatusBar />
 
       {/* Voice / Permission Toast Notification */}

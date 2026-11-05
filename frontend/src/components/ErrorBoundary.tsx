@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-3xl border border-purple-800/80 bg-[#0d071a] p-8 shadow-[0_0_50px_rgba(147,51,234,0.3)]">
-            {/* Solo Leveling System Alert Icon */}
+            {/* Skill Leveling System Alert Icon */}
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-950/80 border border-purple-700 text-purple-400 mx-auto mb-6 shadow-[0_0_20px_rgba(147,51,234,0.5)]">
               <AlertOctagon className="h-8 w-8 text-rose-500 animate-pulse" />
             </div>

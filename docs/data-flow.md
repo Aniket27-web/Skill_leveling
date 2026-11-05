@@ -146,7 +146,7 @@ sequenceDiagram
     Candidate->>Client: Clicks "Submit Answer" (or auto-submit on countdown expiry)
     Client->>Server: POST /api/sessions/{id}/questions/{qid}/answer {answer_text, source: "voice"}
 
-    Note over Candidate,Server: Phase 3: AI Scoring & Solo Leveling Rank Update
+    Note over Candidate,Server: Phase 3: AI Scoring & Hunter Rank Update
     Server->>DB: Set answer_text, answered_at, eval_status: "pending"
     Server->>AI: structured("evaluation", prompt_version="evaluate_v1")
     AI-->>Server: JSON: {dimensions, strengths, improvements, ideal_outline}

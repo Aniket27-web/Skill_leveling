@@ -11,7 +11,7 @@ The Skill Leveling platform is an automated mock interview training and evaluati
 - Configure calibrated interview sessions according to difficulty (Easy, Medium, Hard), category, experience level, target role, and duration.
 - Engage in live interactive interviews across Text, Audio, and Video (with an animated 3D avatar) modes.
 - Receive immediate dimensional evaluations (Relevance, Accuracy, Depth, Clarity) and actionable AI feedback on each answer.
-- Progress through a gamified *Solo Leveling* rank hierarchy (Level 0–100, Ranks E to S) with reward points for accuracy and strict 1/3 penalties for subpar answers.
+- Progress through a gamified hunter rank hierarchy (Level 0–100, Ranks E to S) with reward points for accuracy and strict 1/3 penalties for subpar answers.
 - Review holistic performance debriefs and export professional vector PDF assessment reports.
 
 ### 1.3. References & Standards
@@ -83,7 +83,7 @@ Skill Leveling operates as a self-contained web platform with a React single-pag
 - **FR-6.3**: Feedback shall include strengths, areas to improve, missed points, and an ideal answer structural outline.
 - **FR-6.4**: If evaluation fails due to an LLM outage or malformed response, the answer shall remain saved, and a dedicated retry card shall allow the user to retry evaluation or continue.
 
-### FR-7: Solo Leveling Gamification
+### FR-7: Hunter Leveling & Rank Gamification
 - **FR-7.1**: The system shall maintain a Hunter Level (0 to 100) and Rank:
   - **E-Rank**: Level 0 – 19 (The Weakest Hunter)
   - **D-Rank**: Level 20 – 34 (Awakened Combatant)

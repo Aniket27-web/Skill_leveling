@@ -51,7 +51,7 @@ export const HunterStatusBar: React.FC<HunterStatusBarProps> = ({ profile: propP
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-purple-200 bg-white p-4 shadow-sm dark:border-purple-900/50 dark:bg-black/80 dark:shadow-[0_0_20px_rgba(147,51,234,0.15)] transition-all">
-      {/* Solo Leveling Blue/Purple Mana Glow behind */}
+      {/* Skill Leveling Blue/Purple Mana Glow behind */}
       <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-purple-600/10 blur-2xl dark:bg-purple-600/20" />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

@@ -24,9 +24,9 @@ export default {
         },
       },
       boxShadow: {
-        'solo-glow': '0 0 20px rgba(168, 85, 247, 0.45)',
-        'solo-glow-lg': '0 0 35px rgba(147, 51, 234, 0.65)',
-        'solo-card': '0 4px 20px -2px rgba(147, 51, 234, 0.1)',
+        'skill-glow': '0 0 20px rgba(168, 85, 247, 0.45)',
+        'skill-glow-lg': '0 0 35px rgba(147, 51, 234, 0.65)',
+        'skill-card': '0 4px 20px -2px rgba(147, 51, 234, 0.1)',
       },
     },
   },

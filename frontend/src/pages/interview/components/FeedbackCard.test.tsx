@@ -107,7 +107,7 @@ describe('FeedbackCard component', () => {
     expect(onContinueMock).toHaveBeenCalledTimes(1);
   });
 
-  it('renders Solo Leveling level-up gain and penalty banners when deltaInfo is provided', () => {
+  it('renders level-up gain and penalty banners when deltaInfo is provided', () => {
     // 1. Correct gain
     const { rerender } = render(
       <FeedbackCard

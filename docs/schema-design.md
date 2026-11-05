@@ -159,7 +159,7 @@ Stores individual interview questions, candidate responses, dimensional scores, 
 ## 3. Client-Side Browser Storage Schema
 
 ### 3.1. `localStorage` Keys
-- **`skill_leveling_hunter_stats`**: Persists the Solo Leveling Hunter profile:
+- **`skill_leveling_hunter_stats`**: Persists the Hunter leveling profile:
   ```json
   {
     "level": 42.5,
