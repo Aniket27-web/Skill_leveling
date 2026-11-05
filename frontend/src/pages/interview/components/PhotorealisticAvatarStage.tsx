@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+// Core 17 Photorealistic Master JPG Action Frames
 import marcusIdle from '../../../assests/Inteviewer/marcus_vance_office_interview.jpg';
 import marcusParted from '../../../assests/Inteviewer/marcus_vance_parted.jpg';
 import marcusSpeaking from '../../../assests/Inteviewer/marcus_vance_speaking.jpg';
@@ -8,6 +9,14 @@ import marcusThinking from '../../../assests/Inteviewer/marcus_vance_thinking.jp
 import marcusListening from '../../../assests/Inteviewer/marcus_vance_listening.jpg';
 import marcusHalfBlink from '../../../assests/Inteviewer/marcus_vance_half_blink.jpg';
 import marcusBlink from '../../../assests/Inteviewer/marcus_vance_blink.jpg';
+import marcusNodDown from '../../../assests/Inteviewer/marcus_vance_nod_down.jpg';
+import marcusNodUp from '../../../assests/Inteviewer/marcus_vance_nod_up.jpg';
+import marcusAttentiveLean from '../../../assests/Inteviewer/marcus_vance_attentive_lean.jpg';
+import marcusCuriousTilt from '../../../assests/Inteviewer/marcus_vance_curious_tilt.jpg';
+import marcusLookDownNotes from '../../../assests/Inteviewer/marcus_vance_look_down_notes.jpg';
+import marcusWelcomingSmile from '../../../assests/Inteviewer/marcus_vance_welcoming_smile.jpg';
+import marcusMouthWide from '../../../assests/Inteviewer/marcus_vance_mouth_wide.jpg';
+import marcusMouthNarrow from '../../../assests/Inteviewer/marcus_vance_mouth_narrow.jpg';
 
 export type Viseme = 'neutral' | 'aa' | 'ee' | 'oh' | 'oo' | 'smile';
 
@@ -53,7 +62,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     });
     if (!ctx) return;
 
-    // Load and decode all 9 keyframes
+    // Load and decode all 17 action keyframes
     const images: Record<string, HTMLImageElement> = {
       idle: new Image(),
       parted: new Image(),
@@ -64,6 +73,14 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       listening: new Image(),
       halfBlink: new Image(),
       blink: new Image(),
+      nodDown: new Image(),
+      nodUp: new Image(),
+      attentiveLean: new Image(),
+      curiousTilt: new Image(),
+      lookDownNotes: new Image(),
+      welcomingSmile: new Image(),
+      mouthWide: new Image(),
+      mouthNarrow: new Image(),
     };
 
     images.idle.src = marcusIdle;
@@ -75,6 +92,14 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     images.listening.src = marcusListening;
     images.halfBlink.src = marcusHalfBlink;
     images.blink.src = marcusBlink;
+    images.nodDown.src = marcusNodDown;
+    images.nodUp.src = marcusNodUp;
+    images.attentiveLean.src = marcusAttentiveLean;
+    images.curiousTilt.src = marcusCuriousTilt;
+    images.lookDownNotes.src = marcusLookDownNotes;
+    images.welcomingSmile.src = marcusWelcomingSmile;
+    images.mouthWide.src = marcusMouthWide;
+    images.mouthNarrow.src = marcusMouthNarrow;
 
     Object.values(images).forEach((img) => {
       if ('decode' in img) {
@@ -93,7 +118,6 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
 
     const updateSize = (w: number, h: number) => {
       if (!w || !h) return;
-      // Cap buffer resolution to 1280x720 max for silky 60 FPS throughput
       const maxW = 1280;
       let targetW = Math.round(w);
       let targetH = Math.round(h);
@@ -119,7 +143,6 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       drawY = Math.round((targetH - drawH) / 2);
     };
 
-    // Initialize dimensions once
     updateSize(container.clientWidth || 960, container.clientHeight || 540);
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -163,35 +186,70 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
         }
       }
 
-      // Fast single-pass keyframe selection (Zero multi-layer CPU fill rate lag)
+      // Fast single-pass keyframe selection across all 17 action poses
       let primaryImg = images.idle;
 
       if (activeBlinkImg && activeBlinkImg.complete) {
         primaryImg = activeBlinkImg;
       } else if (isSpeaking) {
         const currentViseme = visemeRef.current;
-        const wave = Math.sin(elapsed * 12.0);
+        const wave = Math.sin(elapsed * 13.5);
 
-        if (wave > 0.45) {
+        if (wave > 0.18) {
+          // Dynamic phonetic articulation mapping
           if (currentViseme === 'oh' || currentViseme === 'oo') {
             primaryImg = images.rounded.complete ? images.rounded : images.speaking;
-          } else if (Math.sin(elapsed * 4.2) > 0.2 && images.speechAccent.complete) {
-            primaryImg = images.speechAccent;
+          } else if (currentViseme === 'aa') {
+            primaryImg = images.mouthWide.complete ? images.mouthWide : images.speaking;
+          } else if (currentViseme === 'ee') {
+            primaryImg = images.mouthNarrow.complete ? images.mouthNarrow : images.speechAccent;
+          } else if (Math.sin(elapsed * 4.2) > 0.3) {
+            primaryImg = images.speechAccent.complete ? images.speechAccent : images.speaking;
           } else {
             primaryImg = images.speaking.complete ? images.speaking : images.parted;
           }
-        } else if (wave > -0.2) {
+        } else if (wave > -0.45) {
           primaryImg = images.parted.complete ? images.parted : images.idle;
         } else {
           primaryImg = images.idle;
         }
       } else if (isThinking && images.thinking.complete) {
-        primaryImg = images.thinking;
-      } else if (isListening && images.listening.complete) {
-        primaryImg = images.listening;
+        // Natural contemplative cycle: evaluates code/notes then tilts curiously
+        const thinkingBeat = elapsed % 6.0;
+        if (thinkingBeat < 2.5) {
+          primaryImg = images.thinking;
+        } else if (thinkingBeat < 4.2 && images.lookDownNotes.complete) {
+          primaryImg = images.lookDownNotes; // Glances at candidate code
+        } else if (images.curiousTilt.complete) {
+          primaryImg = images.curiousTilt; // Curious head tilt
+        } else {
+          primaryImg = images.thinking;
+        }
+      } else if (isListening) {
+        // Attentive listening rhythm: lean forward -> nod in agreement -> warm smile
+        const listeningBeat = elapsed % 7.5;
+        if (listeningBeat < 2.8 && images.attentiveLean.complete) {
+          primaryImg = images.attentiveLean; // Leaning closer to camera
+        } else if (listeningBeat < 4.0 && images.nodDown.complete) {
+          primaryImg = images.nodDown; // Affirmative nod of agreement
+        } else if (listeningBeat < 4.8 && images.nodUp.complete) {
+          primaryImg = images.nodUp; // Head nod recovery
+        } else if (listeningBeat < 6.4 && images.listening.complete) {
+          primaryImg = images.listening; // Encouraging smile
+        } else {
+          primaryImg = images.idle;
+        }
+      } else {
+        // Idle ambient presence: subtle periodic welcoming micro-expressions
+        const idleBeat = elapsed % 9.0;
+        if (idleBeat > 7.2 && idleBeat < 8.4 && images.welcomingSmile.complete) {
+          primaryImg = images.welcomingSmile;
+        } else {
+          primaryImg = images.idle;
+        }
       }
 
-      // Single hardware draw call per frame
+      // Single hardware draw call per frame (Silky 60 FPS, 0 stutter)
       if (primaryImg && primaryImg.complete && primaryImg.naturalWidth > 0) {
         ctx.drawImage(primaryImg, drawX, drawY, drawW, drawH);
       }
