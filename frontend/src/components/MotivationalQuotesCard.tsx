@@ -12,69 +12,76 @@ export interface MotivationalQuote {
 const QUOTES: MotivationalQuote[] = [
   {
     id: 1,
+    text: "Life is a game, and everyone plays it alone; in the end, your strength is your only true companion.",
+    author: "Developer",
+    source: "System Core Directive",
+    tag: "Resilience",
+  },
+  {
+    id: 2,
     text: "I used to be the weakest hunter of all mankind. But I never gave up on surviving and growing stronger. Arise.",
     author: "Sung Jin-woo",
     source: "Solo Leveling (Chugong)",
     tag: "Solo Leveling",
   },
   {
-    id: 2,
+    id: 3,
     text: "The pain of discipline is temporary, but the regret of quitting lasts forever. Keep grinding, keep leveling.",
     author: "Sung Jin-woo",
     source: "Shadow Monarch · Solo Leveling",
     tag: "Solo Leveling",
   },
   {
-    id: 3,
+    id: 4,
     text: "He who has a why to live can bear almost any how.",
     author: "Friedrich Nietzsche",
     source: "Twilight of the Idols",
     tag: "Philosophy",
   },
   {
-    id: 4,
+    id: 5,
     text: "You have power over your mind — not outside events. Realize this, and you will find unbreakable strength.",
     author: "Marcus Aurelius",
     source: "Meditations",
     tag: "Philosophy",
   },
   {
-    id: 5,
+    id: 6,
     text: "Courage isn't the absence of fear, but the triumph over it. Even in the darkest dungeon, push forward.",
     author: "Chugong",
     source: "Creator of Solo Leveling",
     tag: "Solo Leveling",
   },
   {
-    id: 6,
+    id: 7,
     text: "The impediment to action advances action. What stands in the way becomes the way.",
     author: "Marcus Aurelius",
     source: "Roman Emperor & Stoic Philosopher",
     tag: "Philosophy",
   },
   {
-    id: 7,
+    id: 8,
     text: "I will become stronger. Stronger than anyone else, so that I will never be helpless again.",
     author: "Sung Jin-woo",
     source: "Solo Leveling",
     tag: "Solo Leveling",
   },
   {
-    id: 8,
+    id: 9,
     text: "It does not matter how slowly you go as long as you do not stop.",
     author: "Confucius",
     source: "Analects of Confucius",
     tag: "Resilience",
   },
   {
-    id: 9,
+    id: 10,
     text: "Do not pray for an easy life, pray for the strength to endure a difficult one.",
     author: "Bruce Lee",
     source: "Martial Artist & Philosopher",
     tag: "Resilience",
   },
   {
-    id: 10,
+    id: 11,
     text: "Limits exist only for those who accept them. Every dungeon cleared is proof you can surpass yourself.",
     author: "Sung Jin-woo",
     source: "Monarch of Shadows · Solo Leveling",
@@ -86,11 +93,11 @@ export const MotivationalQuotesCard: React.FC = () => {
   const [index, setIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Auto-rotate quotes every 12 seconds
+  // Auto-rotate quotes every 20 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       handleNextQuote();
-    }, 12000);
+    }, 20000);
     return () => clearInterval(timer);
   }, [index]);
 
