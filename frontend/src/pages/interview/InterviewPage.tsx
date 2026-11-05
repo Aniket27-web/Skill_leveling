@@ -897,9 +897,9 @@ export const InterviewPage: React.FC = () => {
   }
 
   return (
-    <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-5 px-3 py-5 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
-      {/* Hunter Status Bar */}
-      <HunterStatusBar />
+    <div className={`${session.interview_mode === 'video' ? 'mx-auto max-w-7xl space-y-4 px-3 py-4 sm:px-6' : 'mx-auto max-w-4xl space-y-6 px-4 py-8'}`}>
+      {/* Hunter Status Bar (Shown in Text/Audio modes only) */}
+      {session.interview_mode !== 'video' && <HunterStatusBar />}
 
       {/* Voice / Permission Toast Notification */}
       {voiceToast && (
@@ -920,54 +920,56 @@ export const InterviewPage: React.FC = () => {
         </div>
       )}
 
-      {/* Top Header: Progress and Timer */}
-      <div className={`space-y-3 rounded-2xl border p-5 shadow-sm ${session.interview_mode === 'video' ? 'border-slate-700 bg-[#202124] text-white' : 'border-purple-200 bg-white dark:border-purple-900/60 dark:bg-[#0d071a]'}`}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center space-x-3">
-            <span className={`rounded-full border px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${session.interview_mode === 'video' ? 'border-white/15 bg-white/10 text-white' : 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300'}`}>
-              Question {orderIndex} of {totalQuestions}
-            </span>
-            {currentQ?.category && (
-              <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${session.interview_mode === 'video' ? 'bg-white/10 text-white/75' : 'bg-slate-100 text-slate-600 dark:bg-[#180e30] dark:text-purple-300'}`}>
-                Category: {currentQ.category}
+      {/* Top Header: Progress and Timer (Shown in Text/Audio modes only) */}
+      {session.interview_mode !== 'video' && (
+        <div className="space-y-3 rounded-2xl border border-purple-200 bg-white p-5 shadow-sm dark:border-purple-900/60 dark:bg-[#0d071a]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                Question {orderIndex} of {totalQuestions}
               </span>
-            )}
-            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wide text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800 hidden sm:inline-block">
-              {session.difficulty} Dungeon
-            </span>
+              {currentQ?.category && (
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium capitalize text-slate-600 dark:bg-[#180e30] dark:text-purple-300">
+                  Category: {currentQ.category}
+                </span>
+              )}
+              <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wide text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 dark:border dark:border-purple-800 hidden sm:inline-block">
+                {session.difficulty} Dungeon
+              </span>
+            </div>
+
+            {/* Bonus Timer */}
+            <div className="flex items-center gap-3">
+              {session.duration_minutes && (
+                <CountdownTimer
+                  secondsRemaining={durationCountdown.secondsRemaining}
+                  totalSeconds={durationCountdown.totalSeconds}
+                  percentRemaining={durationCountdown.percentRemaining}
+                  colorState={durationCountdown.colorState}
+                  formattedTime={durationCountdown.formattedTime}
+                />
+              )}
+              {timerEnabled && (
+                <CountdownTimer
+                  secondsRemaining={countdown.secondsRemaining}
+                  totalSeconds={countdown.totalSeconds}
+                  percentRemaining={countdown.percentRemaining}
+                  colorState={countdown.colorState}
+                  formattedTime={countdown.formattedTime}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Bonus Timer */}
-          <div className="flex items-center gap-3">
-          {session.duration_minutes && (
-            <CountdownTimer
-              secondsRemaining={durationCountdown.secondsRemaining}
-              totalSeconds={durationCountdown.totalSeconds}
-              percentRemaining={durationCountdown.percentRemaining}
-              colorState={durationCountdown.colorState}
-              formattedTime={durationCountdown.formattedTime}
+          {/* Progress Bar */}
+          <div className="w-full bg-purple-100 dark:bg-purple-950/80 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 h-2 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(147,51,234,0.5)]"
+              style={{ width: `${progressPercent}%` }}
             />
-          )}
-          {timerEnabled && (
-            <CountdownTimer
-              secondsRemaining={countdown.secondsRemaining}
-              totalSeconds={countdown.totalSeconds}
-              percentRemaining={countdown.percentRemaining}
-              colorState={countdown.colorState}
-              formattedTime={countdown.formattedTime}
-            />
-          )}
           </div>
         </div>
-
-        {/* Progress Bar */}
-        <div className="w-full bg-purple-100 dark:bg-purple-950/80 rounded-full h-2 overflow-hidden">
-          <div
-            className="bg-gradient-to-r from-purple-700 via-indigo-600 to-fuchsia-600 h-2 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(147,51,234,0.5)]"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
+      )}
 
       {isDurationExpired && <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">Your dungeon time is up. We are finalizing your hunter debrief.</div>}
 
@@ -1082,7 +1084,6 @@ export const InterviewPage: React.FC = () => {
               <span>{candidateFirstName || 'You'}</span>
             </div>
           </div>
-          <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 text-[11px] font-medium text-white sm:left-5 sm:top-5"><span className="h-2 w-2 rounded-full bg-emerald-400" /> AI interviewer</div>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 px-3 py-4 sm:gap-5 sm:px-6">
           <button type="button" onClick={toggleMicrophone} aria-pressed={microphoneEnabled} aria-label={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} title={microphoneEnabled ? 'Mute microphone' : 'Unmute microphone'} className={`flex h-12 w-12 items-center justify-center rounded-full transition ${microphoneEnabled ? 'bg-[#3c4043] text-white hover:bg-[#4b4f52]' : 'bg-rose-600 text-white'}`}>{microphoneEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}</button>
