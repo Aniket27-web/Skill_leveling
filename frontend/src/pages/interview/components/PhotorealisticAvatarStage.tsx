@@ -115,9 +115,16 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
     const FRAME_INTERVAL_MS = 1000 / TARGET_FPS; // 40.0 ms
 
     let lastFrameTime = performance.now();
-    let currentSpeechFrame = 0;
-    let currentIdleFrame = 0;
-    let idleDir = 1;
+    let currentSpeechFrame = 30; // Start of speaking articulation
+    let speechDir = 1;
+    let listeningMicroFrame = 0;
+    let microDir = 1;
+
+    // Natural eye blinking scheduler for listening & idle
+    let isBlinking = false;
+    let blinkStartTime = 0;
+    let nextBlinkTime = performance.now() + 2500;
+    const BLINK_DURATION_MS = 160; // 160ms natural human blink
 
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
@@ -126,53 +133,83 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
       const isListening = listeningRef.current && !isSpeaking;
       const isThinking = thinkingRef.current && !isSpeaking;
 
-      // Lock frame advancement strictly to 25 frames per second
+      // Eye blink scheduler (active during listening, idle, and thinking)
+      if (!isSpeaking) {
+        if (!isBlinking && now >= nextBlinkTime) {
+          isBlinking = true;
+          blinkStartTime = now;
+        }
+        if (isBlinking && now - blinkStartTime >= BLINK_DURATION_MS) {
+          isBlinking = false;
+          // Schedule next natural blink in 2.8 to 4.5 seconds
+          nextBlinkTime = now + Math.random() * 1700 + 2800;
+        }
+      } else {
+        isBlinking = false;
+      }
+
+      // Lock frame advancement strictly to 25 frames per second (40ms ticks)
       const elapsed = now - lastFrameTime;
       if (elapsed >= FRAME_INTERVAL_MS) {
         const steps = Math.floor(elapsed / FRAME_INTERVAL_MS);
         lastFrameTime = now - (elapsed % FRAME_INTERVAL_MS);
 
         if (isSpeaking) {
-          // Advance forward smoothly at exact 25 FPS across all 97 frames
-          currentSpeechFrame = (currentSpeechFrame + steps) % totalFrames;
-        } else if (isListening) {
-          // Attentive listening loop across calm frames (0 to 24) at 25 FPS
-          currentIdleFrame += idleDir * steps;
-          if (currentIdleFrame >= 24) {
-            currentIdleFrame = 24;
-            idleDir = -1;
-          } else if (currentIdleFrame <= 0) {
-            currentIdleFrame = 0;
-            idleDir = 1;
-          }
-        } else if (isThinking) {
-          // Thoughtful contemplative loop across calm frames (0 to 18) at 25 FPS
-          currentIdleFrame += idleDir * steps;
-          if (currentIdleFrame >= 18) {
-            currentIdleFrame = 18;
-            idleDir = -1;
-          } else if (currentIdleFrame <= 0) {
-            currentIdleFrame = 0;
-            idleDir = 1;
+          // Smooth 25 FPS speaking articulation across frames (30 to 96)
+          currentSpeechFrame += speechDir * steps;
+          if (currentSpeechFrame >= totalFrames - 1) {
+            currentSpeechFrame = totalFrames - 1;
+            speechDir = -1;
+          } else if (currentSpeechFrame <= 30) {
+            currentSpeechFrame = 30;
+            speechDir = 1;
           }
         } else {
-          // Calm resting presence across frames (0 to 12) at 25 FPS
-          currentIdleFrame += idleDir * steps;
-          if (currentIdleFrame >= 12) {
-            currentIdleFrame = 12;
-            idleDir = -1;
-          } else if (currentIdleFrame <= 0) {
-            currentIdleFrame = 0;
-            idleDir = 1;
+          // Attentive listening micro-presence loop across smiling frames (0, 1, 2)
+          listeningMicroFrame += microDir * steps;
+          if (listeningMicroFrame >= 2) {
+            listeningMicroFrame = 2;
+            microDir = -1;
+          } else if (listeningMicroFrame <= 0) {
+            listeningMicroFrame = 0;
+            microDir = 1;
           }
         }
       }
 
-      const activeIndex = isSpeaking ? currentSpeechFrame : currentIdleFrame;
+      let activeIndex = 0;
+
+      if (isSpeaking) {
+        // Speaking: mouth articulates at 25 FPS
+        activeIndex = currentSpeechFrame;
+      } else if (isBlinking) {
+        // Natural blink sequence while listening with mouth shut & warm smile:
+        // Frame 18 (scene00037.png): closing
+        // Frame 19 (scene00039.png): closed blink
+        // Frame 20 (scene00041.png): opening
+        const blinkProgress = now - blinkStartTime;
+        if (blinkProgress < 40) {
+          activeIndex = 18;
+        } else if (blinkProgress < 120) {
+          activeIndex = 19;
+        } else {
+          activeIndex = 20;
+        }
+      } else if (isListening) {
+        // When listening to user: shut mouth, warm attentive smile, subtle micro-motion
+        activeIndex = Math.max(0, Math.min(2, listeningMicroFrame));
+      } else if (isThinking) {
+        // When evaluating: shut mouth, attentive focused expression
+        activeIndex = 0;
+      } else {
+        // Idle ready state: shut mouth, warm welcoming smile
+        activeIndex = Math.max(0, Math.min(2, listeningMicroFrame));
+      }
+
       const clampedIndex = Math.max(0, Math.min(totalFrames - 1, activeIndex));
       const activeImg = images[clampedIndex] || images[0];
 
-      // Single hardware draw call per frame (Smooth 25 FPS, zero jitter)
+      // Single hardware draw call per frame (Smooth 25 FPS, 0 stutter)
       if (activeImg && activeImg.complete && activeImg.naturalWidth > 0) {
         ctx.drawImage(activeImg, drawX, drawY, drawW, drawH);
       }
@@ -229,7 +266,7 @@ export const PhotorealisticAvatarStage: React.FC<PhotorealisticAvatarStageProps>
             </div>
           )}
           <span className="font-medium text-slate-200">
-            {speaking ? 'Interviewer Speaking (25 FPS)' : listening ? 'Listening Attentively' : 'Ready for Answer'}
+            {speaking ? 'Interviewer Speaking' : listening ? 'Listening Attentively' : 'Ready for Answer'}
           </span>
         </div>
       </div>
